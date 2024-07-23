@@ -18,7 +18,7 @@ const Myincome = () => {
     if (!userId) {
       console.warn('No user ID provided.');
       return {
-        name: 'Unknown User',
+        name: 'Driver', // Default name if userId is not available
         avatar: DEFAULT_AVATAR, // Use the constant image
       };
     }
@@ -34,20 +34,20 @@ const Myincome = () => {
         console.log("Fetched user data:", userData);
         const { firstName, lastName, avatar } = userData;
         return {
-          name: firstName && lastName ? `${firstName} ${lastName}` : 'Unknown User',
+          name: firstName && lastName ? `${firstName} ${lastName}` : 'Driver',
           avatar: avatar ? { uri: avatar } : DEFAULT_AVATAR, // Use the constant image if no avatar is available
         };
       } else {
         console.warn(`User with ID ${userId} does not exist.`);
         return {
-          name: 'Unknown User',
+          name: 'Driver', // Default name if user does not exist
           avatar: DEFAULT_AVATAR, // Use the constant image
         };
       }
     } catch (error) {
       console.error('Error fetching user name:', error.message);
       return {
-        name: 'Unknown User',
+        name: 'Driver', // Default name if error occurs
         avatar: DEFAULT_AVATAR, // Use the constant image
       };
     }
@@ -78,7 +78,7 @@ const Myincome = () => {
           const chat = chatsData[chatKey];
 
           if (chat.users && chat.users.includes(currentUserEmail)) {
-            const otherUserId = Object.keys(chat.users).find(id => id !== userId);
+            const otherUserId = chat.users.find(id => id !== currentUserEmail); // Assuming there's only one other user
             const messages = Object.values(chat.messages || {});
 
             if (messages.length > 0) {
@@ -120,7 +120,7 @@ const Myincome = () => {
     <TouchableOpacity
       style={styles.chatCard}
       onPress={() => {
-        console.log('Navigating to Message screen with chatId:', item.chatId);
+        console.log('Navigating to chat screen with chatId:', item.chatId);
         navigation.navigate('chat', { chatId: item.chatId });
       }}
     >

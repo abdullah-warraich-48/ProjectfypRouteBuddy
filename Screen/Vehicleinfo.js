@@ -1,10 +1,10 @@
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { firebase } from '../firebase/firebaseConfig'; // Import Firebase configuration
 
 const VehicleInfo = () => {
@@ -94,9 +94,14 @@ const VehicleInfo = () => {
       }
     }
 
+    console.log('Selected Vehicle:', selectedVehicle); // Debugging statement
+    console.log('Model:', model); // Debugging statement
+    console.log('Seats:', seats); // Debugging statement
+    console.log('Color:', color); // Debugging statement
+
     navigation.navigate('Routeinfo', {
       ...route.params,
-      selectedVehicle,
+      vehicleType: selectedVehicle,
       model,
       vehicleImageUri: vehicleImageUrl,
       seats,
@@ -243,10 +248,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: 20,
     paddingHorizontal: 25,
-    paddingBottom: 20,
+    paddingVertical: 15,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 10,
   },
   label: {
     fontSize: 16,
@@ -254,9 +259,6 @@ const styles = StyleSheet.create({
   },
   picker: {
     height: 40,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
     backgroundColor: '#fff',
   },
   imageContainer: {

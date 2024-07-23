@@ -5,7 +5,7 @@ import { Bubble, GiftedChat, MessageText } from 'react-native-gifted-chat';
 import { UserContext } from '../context/UserContext';
 import { firebase } from '../firebase/firebaseConfig';
 
-const chat = ({ route }) => {
+const Chat = ({ route }) => {
   const { currentUser } = useContext(UserContext);
   const { chatId } = route.params || {};
 
@@ -82,7 +82,6 @@ const chat = ({ route }) => {
   };
 
   const renderAvatar = (props) => {
-    const { currentMessage } = props;
     return <Image style={styles.avatar} source={require('../assets/aa.png')} />;
   };
 
@@ -134,4 +133,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default chat;
+export default Chat;
