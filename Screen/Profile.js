@@ -1,7 +1,7 @@
 import { FontAwesome } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { firebase } from '../firebase/firebaseConfig';
 
 const Account = () => {
@@ -28,6 +28,7 @@ const Account = () => {
         const data = snapshot.val();
         console.log("User data fetched: ", data); // Debugging line
         setUserData(data);
+        checkDriverStatus(data.email); // Check if user is a driver
       } else {
         console.log("No user data found for uid: ", uid); // Debugging line
       }
@@ -36,22 +37,36 @@ const Account = () => {
     }
   };
 
-  const handleEditProfile = () => {
-    navigation.navigate('UserInfo');
+  const checkDriverStatus = async (email) => {
+    try {
+      const driverRef = firebase.database().ref('driverRef');
+      const snapshot = await driverRef.once('value');
+      const drivers = snapshot.val();
+      console.log("Fetched drivers data: ", drivers); // Log all driver data
+
+      if (drivers) {
+        // Check if any driver email matches the user's email
+        const isDriver = Object.values(drivers).some(driver => driver.email === email);
+        
+        if (isDriver) {
+          // User is a driver
+          navigation.navigate('driveLoc');
+        } else {
+          // User is not a driver
+          navigation.navigate('personalInfo');
+        }
+      } else {
+        console.log("No drivers found in driverRef"); // Debugging line
+        navigation.navigate('personalInfo'); // Default to PersonalInfo if no drivers are found
+      }
+    } catch (error) {
+      console.error("Error checking driver status: ", error);
+      navigation.navigate('personalInfo'); // Default to PersonalInfo on error
+    }
   };
 
-  const handleBecomeDriver = () => {
-    if (userData && userData.driver) {
-      console.log(`Driver ID: ${userData.driver}`);
-    } else {
-      console.log('No driver ID found.');
-    }
-
-    Alert.alert(
-      "Driver Mode",
-      "You are now in driver mode.",
-      [{ text: "OK", onPress: () => navigation.navigate('DriverHome') }]
-    );
+  const handleEditProfile = () => {
+    navigation.navigate('UserInfo');
   };
 
   return (
@@ -76,7 +91,7 @@ const Account = () => {
         </View>
       </TouchableOpacity>
       <View style={styles.optionsContainer}>
-        <TouchableOpacity style={styles.optionButton} onPress={handleBecomeDriver}>
+        <TouchableOpacity style={styles.optionButton} onPress={() => checkDriverStatus(user?.email)}>
           <OptionItem icon="car" label="Become a Driver" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('personalInfo')}>

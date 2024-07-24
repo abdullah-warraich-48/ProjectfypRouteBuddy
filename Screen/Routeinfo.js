@@ -116,7 +116,7 @@ const Routeinfo = () => {
       const database = firebase.database();
       const driverRef = await database.ref('driverRef').push(routeInfo);
       console.log('Route info saved successfully');
-      navigation.navigate('DriverPortfolio');
+      navigation.navigate('RideRequest');
     } catch (error) {
       console.error('Error saving route info:', error.message);
       console.error('Error details:', error);

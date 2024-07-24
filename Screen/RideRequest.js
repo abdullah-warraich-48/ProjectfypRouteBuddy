@@ -1,9 +1,9 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ref, onValue, remove } from 'firebase/database';
-import { firebase } from '../firebase/firebaseConfig'; // Adjust import path as per your project structure
+import { onValue, ref, remove } from 'firebase/database';
+import React, { useContext, useEffect, useState } from 'react';
+import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { UserContext } from '../context/UserContext';
+import { firebase } from '../firebase/firebaseConfig'; // Adjust import path as per your project structure
 
 const NotificationReceiverScreen = () => {
   const navigation = useNavigation();

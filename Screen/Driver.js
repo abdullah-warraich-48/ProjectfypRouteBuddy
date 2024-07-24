@@ -16,7 +16,7 @@ const Driver = ({ route }) => {
   const currentUserEmail = currentUser?.email;
   const { driverData } = route?.params || {};
 
-  console.log("Driver Data", driverData);
+  console.log("Driver Data:", driverData);
 
   useEffect(() => {
     const fetchChatId = async () => {
@@ -72,20 +72,27 @@ const Driver = ({ route }) => {
 
   const handleRequest = async () => {
     try {
+      if (!driverData || !currentUser) {
+        Alert.alert('Error', 'Driver or user data is missing.');
+        return;
+      }
+
       const notificationsRef = ref(firebase.database(), 'notifications');
       const newNotificationRef = push(notificationsRef);
 
       const notificationData = {
-        requesterEmail: currentUser?.email || '', // Handle cases where currentUser.email might be undefined
-        driverName: driverData?.name,
+        requesterEmail: currentUser.email || 'unknown',
+        driverName: driverData.name || 'unknown',
         title: 'New Request',
-        message: `You have received a new request from ${currentUser?.email || ''} for driver ${driverData?.firstName}.`,
+        message: `You have received a new request from ${currentUser.email || 'unknown'} for driver ${driverData.firstName || 'unknown'}.`,
         timestamp: Date.now(),
       };
 
+      console.log("Notification Data:", notificationData);
+
       await set(newNotificationRef, notificationData);
 
-      Alert.alert('Request Sent', `Your request has been sent to ${driverData?.firstName}.`, [
+      Alert.alert('Request Sent', `Your request has been sent to ${driverData.firstName}.`, [
         { text: 'OK', onPress: () => navigation.navigate('NotificationScreen') }
       ]);
     } catch (error) {
@@ -98,7 +105,7 @@ const Driver = ({ route }) => {
     <View style={styles.container}>
       <View style={styles.profileContainer}>
         <Image source={driverData?.profilePic} style={styles.profilePicture} />
-        <Text style={styles.name}>{driverData?.firstName + " " + driverData.lastName}</Text>
+        <Text style={styles.name}>{driverData?.firstName + " " + driverData?.lastName}</Text>
         <Text style={styles.number}>{driverData?.number}</Text>
       </View>
 
@@ -120,7 +127,7 @@ const Driver = ({ route }) => {
           <FontAwesome name="star" size={24} color="black" />
           <Text style={styles.optionLabel}>Rate</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('Availability')}>
+        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('seats')}>
           <FontAwesome name="calendar" size={24} color="black" />
           <Text style={styles.optionLabel}>Availability</Text>
         </TouchableOpacity>
