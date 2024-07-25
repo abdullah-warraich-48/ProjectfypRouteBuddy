@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
-import MyIncome from '../Screen/MyIncome';
-import Rating from '../Screen/Rating';
-// import Pay from '../Screen/Pay';
 import driverprofile from '../Screen/driverprofile';
+import MyIncome from '../Screen/MyIncome';
+import NotificationReceiverScreen from '../Screen/NotificationReceiverScreen';
+import Rating from '../Screen/Rating';
 
 const DriverTab = createBottomTabNavigator();
 
@@ -15,7 +15,7 @@ const DriverHomeNavigation = () => {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
-          if (route.name === 'Riderequest') {
+          if (route.name === 'NotificationScreen') {
             iconName = focused ? 'car' : 'car-outline';
           } else if (route.name === 'MyIncome') {
             iconName = focused ? 'cash' : 'cash-outline';
@@ -33,7 +33,7 @@ const DriverHomeNavigation = () => {
         inactiveTintColor: 'gray',
       }}
     >
-      <DriverTab.Screen name="Riderequest" component={Riderequest} />
+      <DriverTab.Screen name="NotificationScreen" component={NotificationReceiverScreen} />
       <DriverTab.Screen name="MyIncome" component={MyIncome} />
       <DriverTab.Screen name="Rating" component={Rating} />
       <DriverTab.Screen name="Profile" component={driverprofile} />

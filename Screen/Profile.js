@@ -26,11 +26,8 @@ const Account = () => {
       const snapshot = await userRef.once('value');
       if (snapshot.exists()) {
         const data = snapshot.val();
-        console.log("User data fetched: ", data); // Debugging line
         setUserData(data);
-        checkDriverStatus(data.email); // Check if user is a driver
-      } else {
-        console.log("No user data found for uid: ", uid); // Debugging line
+        checkDriverStatus(data.email);
       }
     } catch (error) {
       console.error("Error fetching user data: ", error);
@@ -42,26 +39,21 @@ const Account = () => {
       const driverRef = firebase.database().ref('driverRef');
       const snapshot = await driverRef.once('value');
       const drivers = snapshot.val();
-      console.log("Fetched drivers data: ", drivers); // Log all driver data
-
+      
       if (drivers) {
-        // Check if any driver email matches the user's email
         const isDriver = Object.values(drivers).some(driver => driver.email === email);
         
         if (isDriver) {
-          // User is a driver
-          navigation.navigate('driveLoc');
+          navigation.navigate('NotificationScreen');
         } else {
-          // User is not a driver
           navigation.navigate('personalInfo');
         }
       } else {
-        console.log("No drivers found in driverRef"); // Debugging line
-        navigation.navigate('personalInfo'); // Default to PersonalInfo if no drivers are found
+        navigation.navigate('personalInfo');
       }
     } catch (error) {
       console.error("Error checking driver status: ", error);
-      navigation.navigate('personalInfo'); // Default to PersonalInfo on error
+      navigation.navigate('personalInfo');
     }
   };
 
