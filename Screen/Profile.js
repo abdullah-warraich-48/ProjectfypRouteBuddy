@@ -27,7 +27,6 @@ const Account = () => {
       if (snapshot.exists()) {
         const data = snapshot.val();
         setUserData(data);
-        checkDriverStatus(data.email);
       }
     } catch (error) {
       console.error("Error fetching user data: ", error);
@@ -44,7 +43,7 @@ const Account = () => {
         const isDriver = Object.values(drivers).some(driver => driver.email === email);
         
         if (isDriver) {
-          navigation.navigate('NotificationScreen');
+          navigation.navigate('DriverHome', { screen: 'RideRequest' });
         } else {
           navigation.navigate('personalInfo');
         }
