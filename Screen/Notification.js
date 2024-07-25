@@ -9,7 +9,6 @@ const NotificationScreen = () => {
   const [notifications, setNotifications] = useState([]);
   const { currentUser } = useContext(UserContext);
 
-  // Function to fetch notifications from Firebase
   useEffect(() => {
     const notificationsRef = ref(firebase.database(), 'notifications');
 
