@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import { get, ref } from 'firebase/database';
+import { get, ref, update } from 'firebase/database';
 import React, { useContext, useEffect, useState } from 'react';
 import { Button, FlatList, StyleSheet, Text, View } from 'react-native';
 import { UserContext } from '../context/UserContext';
@@ -11,6 +11,7 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Fetch notifications function
   const fetchNotifications = async () => {
     if (!currentUser) {
       console.warn('No current user found.');
@@ -31,7 +32,8 @@ const Notifications = () => {
         for (const notificationKey in notificationsData) {
           const notification = notificationsData[notificationKey];
 
-          if (notification.recipientEmail === currentUserEmail) {
+          // Check if current user is the recipient
+          if (notification.users.includes(currentUserEmail)) {
             userNotifications.push({
               notificationId: notificationKey,
               senderEmail: notification.senderEmail,
@@ -53,16 +55,28 @@ const Notifications = () => {
     }
   };
 
-  const handleAccept = (notificationId) => {
-    console.log(`Accepted notification with ID: ${notificationId}`);
-    // Update notification status in Firebase
-    // Additional logic for accepting the notification
+  // Handle accept notification
+  const handleAccept = async (notificationId) => {
+    try {
+      const notificationRef = ref(firebase.database(), `notifications/${notificationId}`);
+      await update(notificationRef, { status: 'accepted' });
+      console.log(`Accepted notification with ID: ${notificationId}`);
+      // Optionally update state or perform other actions
+    } catch (error) {
+      console.error('Error accepting notification:', error.message);
+    }
   };
 
-  const handleDecline = (notificationId) => {
-    console.log(`Declined notification with ID: ${notificationId}`);
-    // Update notification status in Firebase
-    // Additional logic for declining the notification
+  // Handle decline notification
+  const handleDecline = async (notificationId) => {
+    try {
+      const notificationRef = ref(firebase.database(), `notifications/${notificationId}`);
+      await update(notificationRef, { status: 'declined' });
+      console.log(`Declined notification with ID: ${notificationId}`);
+      // Optionally update state or perform other actions
+    } catch (error) {
+      console.error('Error declining notification:', error.message);
+    }
   };
 
   useEffect(() => {
