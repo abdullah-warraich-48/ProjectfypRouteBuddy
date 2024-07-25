@@ -1,83 +1,102 @@
 import { useNavigation } from '@react-navigation/native';
-import { onValue, ref, remove } from 'firebase/database';
+import { get, ref } from 'firebase/database';
 import React, { useContext, useEffect, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Button, FlatList, StyleSheet, Text, View } from 'react-native';
 import { UserContext } from '../context/UserContext';
-import { firebase } from '../firebase/firebaseConfig'; // Adjust import path as per your project structure
+import { firebase } from '../firebase/firebaseConfig';
 
-const NotificationReceiverScreen = () => {
+const Notifications = () => {
   const navigation = useNavigation();
   const { currentUser } = useContext(UserContext);
   const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Function to fetch notifications from Firebase
-  useEffect(() => {
+  const fetchNotifications = async () => {
+    if (!currentUser) {
+      console.warn('No current user found.');
+      return;
+    }
+
+    const currentUserEmail = currentUser.email;
     const notificationsRef = ref(firebase.database(), 'notifications');
 
-    // Listen for changes in notifications
-    const unsubscribe = onValue(notificationsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const notificationsArray = Object.entries(data)
-          .map(([key, value]) => ({
-            id: key,
-            ...value,
-          }))
-          .filter((notification) => notification.requesterEmail === currentUser.email); // Filter notifications for current user
-        setNotifications(notificationsArray.reverse()); // Reverse to show latest notifications first
+    try {
+      setLoading(true);
+      const snapshot = await get(notificationsRef);
+
+      if (snapshot.exists()) {
+        const notificationsData = snapshot.val();
+        const userNotifications = [];
+
+        for (const notificationKey in notificationsData) {
+          const notification = notificationsData[notificationKey];
+
+          if (notification.recipientEmail === currentUserEmail) {
+            userNotifications.push({
+              notificationId: notificationKey,
+              senderEmail: notification.senderEmail,
+              message: notification.message,
+              status: notification.status || 'pending',
+            });
+          }
+        }
+
+        setNotifications(userNotifications);
       } else {
-        setNotifications([]);
+        console.warn('No notifications data available.');
       }
-    });
 
-    // Clean up listener when component unmounts
-    return () => unsubscribe();
-  }, [currentUser.email]);
-
-  // Function to handle accepting a request
-  const handleAcceptRequest = (notificationId) => {
-    // Implement your logic to handle accepting the request
-    Alert.alert('Request Accepted', `You have accepted the request.`);
-    // Remove the notification from Firebase
-    remove(ref(firebase.database(), `notifications/${notificationId}`));
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching notifications:', error.message);
+      setLoading(false);
+    }
   };
 
-  // Function to handle declining a request
-  const handleDeclineRequest = (notificationId) => {
-    // Implement your logic to handle declining the request
-    Alert.alert('Request Declined', `You have declined the request.`);
-    // Remove the notification from Firebase
-    remove(ref(firebase.database(), `notifications/${notificationId}`));
+  const handleAccept = (notificationId) => {
+    console.log(`Accepted notification with ID: ${notificationId}`);
+    // Update notification status in Firebase
+    // Additional logic for accepting the notification
   };
 
-  // Render each notification item
-  const renderNotificationItem = ({ item }) => (
-    <View style={styles.notificationItem}>
-      <Text style={styles.notificationText}>{item.message}</Text>
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={[styles.button, styles.acceptButton]} onPress={() => handleAcceptRequest(item.id)}>
-          <Text style={styles.buttonText}>Accept</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.declineButton]} onPress={() => handleDeclineRequest(item.id)}>
-          <Text style={styles.buttonText}>Decline</Text>
-        </TouchableOpacity>
-      </View>
+  const handleDecline = (notificationId) => {
+    console.log(`Declined notification with ID: ${notificationId}`);
+    // Update notification status in Firebase
+    // Additional logic for declining the notification
+  };
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchNotifications().catch(error => {
+        console.error('Error in useEffect fetching notifications:', error.message);
+      });
+    }
+  }, [currentUser]);
+
+  const renderItem = ({ item }) => (
+    <View style={styles.notificationCard}>
+      <Text style={styles.senderEmail}>{item.senderEmail}</Text>
+      <Text style={styles.message}>{item.message}</Text>
+      {item.status === 'pending' && (
+        <View style={styles.buttonContainer}>
+          <Button title="Accept" onPress={() => handleAccept(item.notificationId)} />
+          <Button title="Decline" onPress={() => handleDecline(item.notificationId)} />
+        </View>
+      )}
     </View>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <FlatList
-        data={notifications}
-        renderItem={renderNotificationItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ flexGrow: 1 }}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No notifications</Text>
-          </View>
-        )}
-      />
+      <FlatList data={notifications} keyExtractor={(item) => item.notificationId} renderItem={renderItem} />
     </View>
   );
 };
@@ -88,46 +107,25 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     padding: 20,
   },
-  notificationItem: {
+  notificationCard: {
     backgroundColor: '#f0f0f0',
     padding: 15,
-    marginBottom: 15,
     borderRadius: 10,
+    marginBottom: 10,
   },
-  notificationText: {
+  senderEmail: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  message: {
     fontSize: 16,
+    color: '#555',
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     marginTop: 10,
-  },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  acceptButton: {
-    backgroundColor: '#32a4a8',
-  },
-  declineButton: {
-    backgroundColor: '#e74c3c',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 18,
-    color: 'gray',
   },
 });
 
-export default NotificationReceiverScreen;
+export default Notifications;

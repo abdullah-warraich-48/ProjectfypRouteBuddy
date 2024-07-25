@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { ref, onValue } from 'firebase/database';
-import { firebase } from '../firebase/firebaseConfig'; // Adjust import path as per your project structure
+import { onValue, ref } from 'firebase/database';
+import React, { useContext, useEffect, useState } from 'react';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { UserContext } from '../context/UserContext';
+import { firebase } from '../firebase/firebaseConfig'; // Adjust import path as per your project structure
 
 const NotificationScreen = () => {
   const [notifications, setNotifications] = useState([]);

@@ -16,8 +16,6 @@ const Driver = ({ route }) => {
   const currentUserEmail = currentUser?.email;
   const { driverData } = route?.params || {};
 
-  console.log("Driver Data:", driverData);
-
   useEffect(() => {
     const fetchChatId = async () => {
       try {
@@ -68,8 +66,6 @@ const Driver = ({ route }) => {
     );
   }
 
-  console.log(driverData);
-
   const handleRequest = async () => {
     try {
       if (!driverData || !currentUser) {
@@ -81,11 +77,10 @@ const Driver = ({ route }) => {
       const newNotificationRef = push(notificationsRef);
 
       const notificationData = {
-        requesterEmail: currentUser.email || 'unknown',
-        driverName: driverData.name || 'unknown',
         title: 'New Request',
         message: `You have received a new request from ${currentUser.email || 'unknown'} for driver ${driverData.firstName || 'unknown'}.`,
         timestamp: Date.now(),
+        users: [currentUser.email, driverData.email],
       };
 
       console.log("Notification Data:", notificationData);
