@@ -12,13 +12,13 @@ const Map = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [selectedTime, setSelectedTime] = useState('All');
   const [selectedVehicle, setSelectedVehicle] = useState('All');
-  const [selectedSpecificVehicle, setSelectedSpecificVehicle] = useState('All'); // State for specific vehicle
+  const [selectedSpecificVehicle, setSelectedSpecificVehicle] = useState('All');
   const [selectedPrice, setSelectedPrice] = useState('All');
   const [selectedSubOperator, setSelectedSubOperator] = useState('All');
   const [modalVisible, setModalVisible] = useState(false);
   const [availableTimes, setAvailableTimes] = useState(['All']);
   const [availableVehicles, setAvailableVehicles] = useState(['All']);
-  const [availableSpecificVehicles, setAvailableSpecificVehicles] = useState(['All']); // State for specific vehicle options
+  const [availableSpecificVehicles, setAvailableSpecificVehicles] = useState(['All']);
   const [availablePrices, setAvailablePrices] = useState(['All']);
   const [availableSubOperators, setAvailableSubOperators] = useState(['All']);
 
@@ -38,7 +38,7 @@ const Map = () => {
           email: value.email,
           phoneNumber: value.phoneNumber,
           vehicleType: value.vehicleType,
-          specificVehicle: value.specificVehicle || 'N/A', // Ensure specific vehicle is included
+          specificVehicle: value.specificVehicle || 'N/A',
           price: value.price,
           time: value.time,
           subOperator: value.subOperator || 'N/A',
@@ -56,8 +56,10 @@ const Map = () => {
         const uniquePrices = ['<10000', '10000-20000', '>20000'];
         const uniqueSubOperators = [...new Set(filteredData.map(driver => driver.subOperator))];
 
+        const vehicleOptions = ['Van', 'Carrybox', 'Bike', 'Rikshaw', ...uniqueVehicles.filter(Boolean)];
+
         setAvailableTimes(['All', ...uniqueTimes.filter(Boolean)]);
-        setAvailableVehicles(['All', ...uniqueVehicles.filter(Boolean)]);
+        setAvailableVehicles(['All', ...vehicleOptions.filter(Boolean)]);
         setAvailableSpecificVehicles(['All', ...uniqueSpecificVehicles.filter(Boolean)]);
         setAvailablePrices(['All', ...uniquePrices]);
         setAvailableSubOperators(['All', ...uniqueSubOperators.filter(Boolean)]);
@@ -92,7 +94,6 @@ const Map = () => {
   };
 
   const renderItem = ({ item }) => {
-    console.log(item.id);
     return (
       <TouchableOpacity
         style={styles.cardContainer}
@@ -224,19 +225,20 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    padding: 10,
     marginBottom: 15,
     backgroundColor: '#fff',
     borderRadius: 8,
-    padding: 10,
-    elevation: 3,
+    elevation: 2,
   },
   imageContainer: {
-    marginRight: 15,
-  },
-  image: {
     width: 80,
     height: 80,
+    marginRight: 10,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
     borderRadius: 40,
   },
   detailsContainer: {
