@@ -1,5 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
-import { get, ref, update } from 'firebase/database';
+import { get, onValue, push, ref, update } from 'firebase/database';
 import React, { useContext, useEffect, useState } from 'react';
 import { Button, FlatList, StyleSheet, Text, View } from 'react-native';
 import { UserContext } from '../context/UserContext';
@@ -12,7 +12,7 @@ const Notifications = () => {
   const [loading, setLoading] = useState(true);
 
   // Fetch notifications function
-  const fetchNotifications = async () => {
+  const fetchNotifications = () => {
     if (!currentUser) {
       console.warn('No current user found.');
       return;
@@ -21,47 +21,83 @@ const Notifications = () => {
     const currentUserEmail = currentUser.email;
     const notificationsRef = ref(firebase.database(), 'notifications');
 
-    try {
+    // Listen for real-time updates
+    const unsubscribe = onValue(notificationsRef, (snapshot) => {
       setLoading(true);
-      const snapshot = await get(notificationsRef);
+      const notificationsData = snapshot.val();
+      const userNotifications = [];
 
-      if (snapshot.exists()) {
-        const notificationsData = snapshot.val();
-        const userNotifications = [];
-
+      if (notificationsData) {
         for (const notificationKey in notificationsData) {
           const notification = notificationsData[notificationKey];
 
-          // Check if current user is the recipient
-          if (notification.users.includes(currentUserEmail)) {
-            userNotifications.push({
-              notificationId: notificationKey,
-              senderEmail: notification.senderEmail,
-              message: notification.message,
-              status: notification.status || 'pending',
-            });
+          // Validate the 'users' field
+          if (Array.isArray(notification.users) && !notification.users.includes(undefined)) {
+            // Check if current user is the recipient
+            if (notification.users.includes(currentUserEmail)) {
+              // Assume sender is always the first user
+              const senderEmail = notification.users[0];
+
+              userNotifications.push({
+                notificationId: notificationKey,
+                senderEmail: senderEmail,
+                message: notification.message,
+                status: notification.status || 'pending',
+              });
+            }
+          } else {
+            console.warn(`Invalid 'users' field in notification with ID: ${notificationKey}`);
           }
         }
 
         setNotifications(userNotifications);
       } else {
-        console.warn('No notifications data available.');
+        setNotifications([]);
       }
 
       setLoading(false);
-    } catch (error) {
-      console.error('Error fetching notifications:', error.message);
-      setLoading(false);
-    }
+    });
+
+    // Cleanup listener on unmount
+    return () => unsubscribe();
   };
 
   // Handle accept notification
   const handleAccept = async (notificationId) => {
     try {
       const notificationRef = ref(firebase.database(), `notifications/${notificationId}`);
-      await update(notificationRef, { status: 'accepted' });
-      console.log(`Accepted notification with ID: ${notificationId}`);
-      // Optionally update state or perform other actions
+      const snapshot = await get(notificationRef);
+
+      if (snapshot.exists()) {
+        const notification = snapshot.val();
+        if (notification && Array.isArray(notification.users)) {
+          // Check if the current user is in the notification's users list
+          if (notification.users.includes(currentUser.email)) {
+            // Assume sender is always the first user
+            const senderEmail = notification.users[0];
+            // Update the notification status to 'accepted'
+            await update(notificationRef, { status: 'accepted' });
+            console.log(`Accepted notification with ID: ${notificationId}`);
+
+            // Create a new notification for the sender
+            const senderNotificationRef = ref(firebase.database(), 'notifications');
+            const newNotification = {
+              senderEmail: currentUser.email,
+              users: [senderEmail], // Use senderEmail as the recipient
+              message: `Your request has been accepted by ${currentUser.email}`,
+              status: 'pending',
+            };
+            await push(senderNotificationRef, newNotification);
+            console.log('Notification sent to the sender about acceptance.');
+          } else {
+            console.error('Current user is not in the notification users list.');
+          }
+        } else {
+          console.error('Invalid notification structure:', notification);
+        }
+      } else {
+        console.error('Notification does not exist:', notificationId);
+      }
     } catch (error) {
       console.error('Error accepting notification:', error.message);
     }
@@ -71,9 +107,38 @@ const Notifications = () => {
   const handleDecline = async (notificationId) => {
     try {
       const notificationRef = ref(firebase.database(), `notifications/${notificationId}`);
-      await update(notificationRef, { status: 'declined' });
-      console.log(`Declined notification with ID: ${notificationId}`);
-      // Optionally update state or perform other actions
+      const snapshot = await get(notificationRef);
+
+      if (snapshot.exists()) {
+        const notification = snapshot.val();
+        if (notification && Array.isArray(notification.users)) {
+          // Check if the current user is in the notification's users list
+          if (notification.users.includes(currentUser.email)) {
+            // Assume sender is always the first user
+            const senderEmail = notification.users[0];
+            // Update the notification status to 'declined'
+            await update(notificationRef, { status: 'declined' });
+            console.log(`Declined notification with ID: ${notificationId}`);
+
+            // Create a new notification for the sender
+            const senderNotificationRef = ref(firebase.database(), 'notifications');
+            const newNotification = {
+              senderEmail: currentUser.email,
+              users: [senderEmail], // Use senderEmail as the recipient
+              message: `Your request has been declined by ${currentUser.email}`,
+              status: 'pending',
+            };
+            await push(senderNotificationRef, newNotification);
+            console.log('Notification sent to the sender about decline.');
+          } else {
+            console.error('Current user is not in the notification users list.');
+          }
+        } else {
+          console.error('Invalid notification structure:', notification);
+        }
+      } else {
+        console.error('Notification does not exist:', notificationId);
+      }
     } catch (error) {
       console.error('Error declining notification:', error.message);
     }
@@ -81,9 +146,7 @@ const Notifications = () => {
 
   useEffect(() => {
     if (currentUser) {
-      fetchNotifications().catch(error => {
-        console.error('Error in useEffect fetching notifications:', error.message);
-      });
+      fetchNotifications();
     }
   }, [currentUser]);
 

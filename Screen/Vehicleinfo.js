@@ -17,7 +17,7 @@ const VehicleInfo = () => {
   const [color, setColor] = useState('Red');
   const [uploading, setUploading] = useState(false);
   const [dropdownData, setDropdownData] = useState({
-    vehicles: ['Car', 'Van', 'Truck'],
+    vehicles: ['Car', 'Van', 'carryBox', 'Rikshaw', 'Bike'],
     models: ['2019', '2020', '2021'],
     seats: ['1', '2', '3'],
     colors: ['Red', 'Blue', 'Green'],

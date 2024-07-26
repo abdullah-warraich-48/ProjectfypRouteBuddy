@@ -5,8 +5,9 @@ import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { UserContext } from '../context/UserContext';
 import { firebase, storage } from '../firebase/firebaseConfig'; // Adjust this import based on your project structure
+
 const Routeinfo = () => {
-  const {currentUser} = useContext(UserContext);
+  const { currentUser } = useContext(UserContext);
   const route = useRoute();
   const navigation = useNavigation();
 
@@ -16,11 +17,11 @@ const Routeinfo = () => {
     phoneNumber,
     address,
     age,
-    vehicleType= '',
+    vehicleType = '',
     seats,
     model,
     vehicleImageUri = '',
-    licenseImageUri =  ''
+    licenseImageUri = ''
   } = route.params || {};
 
   const [startPoint, setStartPoint] = useState('');
@@ -94,7 +95,7 @@ const Routeinfo = () => {
     if (!isValid) return;
 
     const routeInfo = {
-      email:currentUser.email,
+      email: currentUser.email,
       firstName,
       lastName,
       phoneNumber,
@@ -116,7 +117,7 @@ const Routeinfo = () => {
       const database = firebase.database();
       const driverRef = await database.ref('driverRef').push(routeInfo);
       console.log('Route info saved successfully');
-      navigation.navigate('RideRequest');
+      navigation.navigate('DriverHome', { screen: 'RideRequest' })
     } catch (error) {
       console.error('Error saving route info:', error.message);
       console.error('Error details:', error);
@@ -127,7 +128,7 @@ const Routeinfo = () => {
     <View style={styles.container}>
       <View style={styles.iconRow}>
         <View style={styles.iconContainer}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('personalInfo')}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('PersonalInfo')}>
             <View style={styles.circle}>
               <Icon name="user" size={30} color="#fff" />
             </View>
@@ -135,7 +136,7 @@ const Routeinfo = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.iconContainer}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('vehicleinfo')}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('VehicleInfo')}>
             <View style={styles.circle}>
               <Icon name="car" size={30} color="#fff" />
             </View>
@@ -143,7 +144,7 @@ const Routeinfo = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.iconContainer}>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Routeinfo')}>
             <View style={styles.circle}>
               <Icon name="road" size={30} color="#fff" />
             </View>
@@ -217,7 +218,7 @@ const Routeinfo = () => {
         <Text style={styles.buttonText}>Add Route</Text>
       </TouchableOpacity>
     </View>
-  );
+  ); ;
 };
 
 const styles = StyleSheet.create({
@@ -260,8 +261,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
-    borderWidth: 1, // Added border width
-    borderColor: '#ccc', // Added border color
+    borderWidth: 1,
+    borderColor: '#ccc',
   },
   inputContainer: {
     marginBottom: 20,
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
     height: 50,
     marginBottom: 30,
     marginTop: 5,
-    marginLeft:20,
+    marginLeft: 20,
     alignSelf: 'flex-end',
   },
   buttonText: {
@@ -311,6 +312,5 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 });
-
 
 export default Routeinfo;

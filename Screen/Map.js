@@ -12,13 +12,15 @@ const Map = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [selectedTime, setSelectedTime] = useState('All');
   const [selectedVehicle, setSelectedVehicle] = useState('All');
+  const [selectedSpecificVehicle, setSelectedSpecificVehicle] = useState('All'); // State for specific vehicle
   const [selectedPrice, setSelectedPrice] = useState('All');
-  const [selectedSubOperator, setSelectedSubOperator] = useState('All'); // New state for subOperator
+  const [selectedSubOperator, setSelectedSubOperator] = useState('All');
   const [modalVisible, setModalVisible] = useState(false);
   const [availableTimes, setAvailableTimes] = useState(['All']);
   const [availableVehicles, setAvailableVehicles] = useState(['All']);
+  const [availableSpecificVehicles, setAvailableSpecificVehicles] = useState(['All']); // State for specific vehicle options
   const [availablePrices, setAvailablePrices] = useState(['All']);
-  const [availableSubOperators, setAvailableSubOperators] = useState(['All']); // New state for subOperator
+  const [availableSubOperators, setAvailableSubOperators] = useState(['All']);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,9 +38,10 @@ const Map = () => {
           email: value.email,
           phoneNumber: value.phoneNumber,
           vehicleType: value.vehicleType,
+          specificVehicle: value.specificVehicle || 'N/A', // Ensure specific vehicle is included
           price: value.price,
           time: value.time,
-          subOperator: value.subOperator || 'N/A', // Ensure subOperator is included
+          subOperator: value.subOperator || 'N/A',
           licenseImageUrl: value.licenseImageUrl || "https://firebasestorage.googleapis.com/v0/b/route-budy-a5648.appspot.com/o/vehicles%2F1720670511070?alt=media&token=32977150-e705-4aeb-99e6-d1a89cf67b4b",
         }));
 
@@ -49,11 +52,13 @@ const Map = () => {
 
         const uniqueTimes = [...new Set(filteredData.map(driver => driver.time))];
         const uniqueVehicles = [...new Set(filteredData.map(driver => driver.vehicleType))];
-        const uniquePrices = ['<10000', '10000-20000', '>20000']; // Assuming fixed categories for price range
+        const uniqueSpecificVehicles = [...new Set(filteredData.map(driver => driver.specificVehicle))];
+        const uniquePrices = ['<10000', '10000-20000', '>20000'];
         const uniqueSubOperators = [...new Set(filteredData.map(driver => driver.subOperator))];
 
         setAvailableTimes(['All', ...uniqueTimes.filter(Boolean)]);
         setAvailableVehicles(['All', ...uniqueVehicles.filter(Boolean)]);
+        setAvailableSpecificVehicles(['All', ...uniqueSpecificVehicles.filter(Boolean)]);
         setAvailablePrices(['All', ...uniquePrices]);
         setAvailableSubOperators(['All', ...uniqueSubOperators.filter(Boolean)]);
       } catch (error) {
@@ -72,13 +77,14 @@ const Map = () => {
     filtered = filtered.filter(driver => {
       const matchesTime = selectedTime === 'All' || (driver.time && driver.time === selectedTime);
       const matchesVehicle = selectedVehicle === 'All' || (driver.vehicleType && driver.vehicleType === selectedVehicle);
+      const matchesSpecificVehicle = selectedSpecificVehicle === 'All' || (driver.specificVehicle && driver.specificVehicle === selectedSpecificVehicle);
       const matchesPrice = selectedPrice === 'All' ||
         (selectedPrice === '<10000' && parseFloat(driver.price) < 10000) ||
         (selectedPrice === '10000-20000' && parseFloat(driver.price) >= 10000 && parseFloat(driver.price) <= 20000) ||
         (selectedPrice === '>20000' && parseFloat(driver.price) > 20000);
       const matchesSubOperator = selectedSubOperator === 'All' || (driver.subOperator && driver.subOperator === selectedSubOperator);
 
-      return matchesTime && matchesVehicle && matchesPrice && matchesSubOperator;
+      return matchesTime && matchesVehicle && matchesSpecificVehicle && matchesPrice && matchesSubOperator;
     });
 
     setFilteredData(filtered);
@@ -110,7 +116,7 @@ const Map = () => {
             Monthly PKR: {item.price || 'N/A'}
           </Text>
           <Text style={styles.subOperatorInfo}>
-            Sub-Operator: {item.subOperator || 'N/A'} {/* Display subOperator */}
+            Sub-Operator: {item.subOperator || 'N/A'}
           </Text>
         </View>
       </TouchableOpacity>
@@ -159,6 +165,16 @@ const Map = () => {
             </Picker>
 
             <Picker
+              selectedValue={selectedSpecificVehicle}
+              style={styles.dropdown}
+              onValueChange={(itemValue) => setSelectedSpecificVehicle(itemValue)}
+            >
+              {availableSpecificVehicles.map((specificVehicle, index) => (
+                <Picker.Item key={index} label={specificVehicle} value={specificVehicle} />
+              ))}
+            </Picker>
+
+            <Picker
               selectedValue={selectedPrice}
               style={styles.dropdown}
               onValueChange={(itemValue) => setSelectedPrice(itemValue)}
@@ -198,7 +214,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#f8f9fa',
   },
   header: {
     fontSize: 24,
@@ -206,65 +222,54 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
   },
-  scrollContainer: {
-    flexGrow: 1,
-  },
   cardContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 15,
     backgroundColor: '#fff',
-    borderRadius: 10,
-    marginBottom: 20,
-    padding: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderRadius: 8,
+    padding: 10,
+    elevation: 3,
   },
   imageContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 40,
-    overflow: 'hidden',
     marginRight: 15,
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   detailsContainer: {
     flex: 1,
   },
   driverName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 5,
   },
   vehicleDetails: {
     fontSize: 14,
-    color: '#333',
-    marginBottom: 5,
+    marginTop: 5,
   },
   paymentInfo: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#32a4a8',
+    fontSize: 14,
+    marginTop: 5,
+    color: '#28a745',
   },
   subOperatorInfo: {
     fontSize: 14,
-    color: '#333',
+    marginTop: 5,
+    color: '#6c757d',
   },
   applyFiltersButton: {
-    backgroundColor: '#32a4a8',
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
     marginBottom: 20,
+    backgroundColor: '#007bff',
+    borderRadius: 8,
+    padding: 10,
   },
   applyFiltersButtonText: {
     color: '#fff',
-    fontSize: 16,
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
   modalContainer: {
     flex: 1,
@@ -273,30 +278,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: '80%',
+    width: 300,
     backgroundColor: '#fff',
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    alignItems: 'center',
   },
   modalHeader: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 20,
   },
   dropdown: {
     width: '100%',
-    height: 40,
-    marginBottom: 10,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 10,
+    marginBottom: 15,
+  },
+  scrollContainer: {
+    paddingBottom: 20,
   },
 });
 
