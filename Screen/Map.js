@@ -1,7 +1,8 @@
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import React, { useContext, useEffect, useState } from 'react';
-import { Button, FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Button, FlatList, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { UserContext } from '../context/UserContext';
 import { firebase } from '../firebase/firebaseConfig';
 
@@ -12,15 +13,15 @@ const Map = () => {
   const [filteredData, setFilteredData] = useState([]);
   const [selectedTime, setSelectedTime] = useState('All');
   const [selectedVehicle, setSelectedVehicle] = useState('All');
-  const [selectedSpecificVehicle, setSelectedSpecificVehicle] = useState('All');
   const [selectedPrice, setSelectedPrice] = useState('All');
-  const [selectedSubOperator, setSelectedSubOperator] = useState('All');
   const [modalVisible, setModalVisible] = useState(false);
   const [availableTimes, setAvailableTimes] = useState(['All']);
   const [availableVehicles, setAvailableVehicles] = useState(['All']);
-  const [availableSpecificVehicles, setAvailableSpecificVehicles] = useState(['All']);
   const [availablePrices, setAvailablePrices] = useState(['All']);
-  const [availableSubOperators, setAvailableSubOperators] = useState(['All']);
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [isStartTimePickerVisible, setStartTimePickerVisibility] = useState(false);
+  const [isEndTimePickerVisible, setEndTimePickerVisibility] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -52,17 +53,11 @@ const Map = () => {
 
         const uniqueTimes = [...new Set(filteredData.map(driver => driver.time))];
         const uniqueVehicles = [...new Set(filteredData.map(driver => driver.vehicleType))];
-        const uniqueSpecificVehicles = [...new Set(filteredData.map(driver => driver.specificVehicle))];
         const uniquePrices = ['<10000', '10000-20000', '>20000'];
-        const uniqueSubOperators = [...new Set(filteredData.map(driver => driver.subOperator))];
-
-        const vehicleOptions = ['Van', 'Carrybox', 'Bike', 'Rikshaw', ...uniqueVehicles.filter(Boolean)];
 
         setAvailableTimes(['All', ...uniqueTimes.filter(Boolean)]);
-        setAvailableVehicles(['All', ...vehicleOptions.filter(Boolean)]);
-        setAvailableSpecificVehicles(['All', ...uniqueSpecificVehicles.filter(Boolean)]);
+        setAvailableVehicles(['All', ...uniqueVehicles.filter(Boolean)]);
         setAvailablePrices(['All', ...uniquePrices]);
-        setAvailableSubOperators(['All', ...uniqueSubOperators.filter(Boolean)]);
       } catch (error) {
         console.error('Error fetching data:', error.message);
       }
@@ -73,20 +68,31 @@ const Map = () => {
     }
   }, [currentUser]);
 
+  const handleStartTimeConfirm = (date) => {
+    setStartTime(date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    setStartTimePickerVisibility(false);
+  };
+
+  const handleEndTimeConfirm = (date) => {
+    setEndTime(date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    setEndTimePickerVisibility(false);
+  };
+
   const applyFilters = () => {
     let filtered = data;
 
     filtered = filtered.filter(driver => {
       const matchesTime = selectedTime === 'All' || (driver.time && driver.time === selectedTime);
       const matchesVehicle = selectedVehicle === 'All' || (driver.vehicleType && driver.vehicleType === selectedVehicle);
-      const matchesSpecificVehicle = selectedSpecificVehicle === 'All' || (driver.specificVehicle && driver.specificVehicle === selectedSpecificVehicle);
       const matchesPrice = selectedPrice === 'All' ||
         (selectedPrice === '<10000' && parseFloat(driver.price) < 10000) ||
         (selectedPrice === '10000-20000' && parseFloat(driver.price) >= 10000 && parseFloat(driver.price) <= 20000) ||
         (selectedPrice === '>20000' && parseFloat(driver.price) > 20000);
-      const matchesSubOperator = selectedSubOperator === 'All' || (driver.subOperator && driver.subOperator === selectedSubOperator);
 
-      return matchesTime && matchesVehicle && matchesSpecificVehicle && matchesPrice && matchesSubOperator;
+      const matchesTimeRange = !startTime || !endTime ||
+        (driver.time && driver.time >= startTime && driver.time <= endTime);
+
+      return matchesTime && matchesVehicle && matchesPrice && matchesTimeRange;
     });
 
     setFilteredData(filtered);
@@ -116,9 +122,6 @@ const Map = () => {
           <Text style={styles.paymentInfo}>
             Monthly PKR: {item.price || 'N/A'}
           </Text>
-          <Text style={styles.subOperatorInfo}>
-            Sub-Operator: {item.subOperator || 'N/A'}
-          </Text>
         </View>
       </TouchableOpacity>
     );
@@ -144,7 +147,7 @@ const Map = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalHeader}>Select Filters</Text>
-
+{/* 
             <Picker
               selectedValue={selectedTime}
               style={styles.dropdown}
@@ -153,7 +156,7 @@ const Map = () => {
               {availableTimes.map((time, index) => (
                 <Picker.Item key={index} label={time} value={time} />
               ))}
-            </Picker>
+            </Picker> */}
 
             <Picker
               selectedValue={selectedVehicle}
@@ -162,16 +165,6 @@ const Map = () => {
             >
               {availableVehicles.map((vehicle, index) => (
                 <Picker.Item key={index} label={vehicle} value={vehicle} />
-              ))}
-            </Picker>
-
-            <Picker
-              selectedValue={selectedSpecificVehicle}
-              style={styles.dropdown}
-              onValueChange={(itemValue) => setSelectedSpecificVehicle(itemValue)}
-            >
-              {availableSpecificVehicles.map((specificVehicle, index) => (
-                <Picker.Item key={index} label={specificVehicle} value={specificVehicle} />
               ))}
             </Picker>
 
@@ -185,15 +178,39 @@ const Map = () => {
               ))}
             </Picker>
 
-            <Picker
-              selectedValue={selectedSubOperator}
-              style={styles.dropdown}
-              onValueChange={(itemValue) => setSelectedSubOperator(itemValue)}
-            >
-              {availableSubOperators.map((subOperator, index) => (
-                <Picker.Item key={index} label={subOperator} value={subOperator} />
-              ))}
-            </Picker>
+            <View style={styles.timePickerContainer}>
+              <Text style={styles.label}>Start Time</Text>
+              <TouchableOpacity onPress={() => setStartTimePickerVisibility(true)}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Select start time"
+                  value={startTime}
+                  editable={false}
+                />
+              </TouchableOpacity>
+              <DateTimePickerModal
+                isVisible={isStartTimePickerVisible}
+                mode="time"
+                onConfirm={handleStartTimeConfirm}
+                onCancel={() => setStartTimePickerVisibility(false)}
+              />
+
+              <Text style={styles.label}>End Time</Text>
+              <TouchableOpacity onPress={() => setEndTimePickerVisibility(true)}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Select end time"
+                  value={endTime}
+                  editable={false}
+                />
+              </TouchableOpacity>
+              <DateTimePickerModal
+                isVisible={isEndTimePickerVisible}
+                mode="time"
+                onConfirm={handleEndTimeConfirm}
+                onCancel={() => setEndTimePickerVisibility(false)}
+              />
+            </View>
 
             <Button title="Apply" onPress={applyFilters} />
             <Button title="Close" onPress={() => setModalVisible(false)} />
@@ -257,11 +274,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
     color: '#28a745',
   },
-  subOperatorInfo: {
-    fontSize: 14,
-    marginTop: 5,
-    color: '#6c757d',
-  },
   applyFiltersButton: {
     marginBottom: 20,
     backgroundColor: '#007bff',
@@ -294,6 +306,22 @@ const styles = StyleSheet.create({
   dropdown: {
     width: '100%',
     marginBottom: 15,
+  },
+  timePickerContainer: {
+    width: '100%',
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
+    padding: 10,
+    width: '100%',
+    backgroundColor: '#fff',
   },
   scrollContainer: {
     paddingBottom: 20,

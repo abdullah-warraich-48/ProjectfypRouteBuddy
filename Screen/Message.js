@@ -13,6 +13,7 @@ const Myincome = () => {
   const { currentUser } = useContext(UserContext);
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // Added error state
 
   const fetchUserName = async (userId) => {
     if (!userId) {
@@ -64,6 +65,7 @@ const Myincome = () => {
 
     try {
       setLoading(true);
+      setError(null); // Reset error state before fetching
       const snapshot = await get(chatsRef);
 
       console.log('Fetching chats data...');
@@ -82,7 +84,10 @@ const Myincome = () => {
             const messages = Object.values(chat.messages || {});
 
             if (messages.length > 0) {
-              const lastMessage = messages[messages.length - 1];
+              // Sort messages by timestamp
+              messages.sort((b, a) => (a.timestamp || 0) - (b.timestamp || 0));
+
+              const lastMessage = messages[0]; // Get the most recent message
               const { name: otherUserName, avatar: otherUserAvatar } = await fetchUserName(otherUserId);
 
               userChats.push({
@@ -91,19 +96,28 @@ const Myincome = () => {
                 lastMessage: lastMessage ? lastMessage.text : 'No messages yet',
                 otherUserName,
                 otherUserAvatar,
+                lastMessageTimestamp: lastMessage.timestamp || 0, // Add timestamp for sorting
               });
             }
           }
         }
 
-        setChats(userChats); // Update state with fetched chats
+        // Sort userChats by last message timestamp in descending order
+        userChats.sort((a, b) => a.timestamp - b.timestamp);
+
+        // Reverse the sorted userChats array to get the latest at the top
+        userChats.reverse();
+
+        // Set chats state with sorted and reversed userChats 
+        setChats(userChats);
       } else {
         console.warn('No chats data available.');
       }
 
-      setLoading(false);
     } catch (error) {
       console.error('Error fetching chats:', error.message);
+      setError('Failed to load chats.'); // Set error state if fetching fails
+    } finally {
       setLoading(false);
     }
   };
@@ -112,6 +126,7 @@ const Myincome = () => {
     if (currentUser) {
       fetchChats().catch(error => {
         console.error('Error in useEffect fetching chats:', error.message);
+        setError('Failed to load chats.'); // Handle errors from fetchChats
       });
     }
   }, [currentUser]);
@@ -140,9 +155,21 @@ const Myincome = () => {
     );
   }
 
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <FlatList data={chats} keyExtractor={(item) => item.chatId} renderItem={renderItem} />
+      <FlatList
+        data={chats}
+        keyExtractor={(item) => item.chatId}
+        renderItem={renderItem}
+      />
     </View>
   );
 };
