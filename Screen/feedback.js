@@ -1,11 +1,13 @@
-// FeedbackScreen.js
-
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Alert, FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AirbnbRating } from 'react-native-ratings';
-import { firebase } from '../firebase/firebaseConfig'; // Ensure firebase is imported correctly
+import { UserContext } from '../context/UserContext';
+import { firebase } from '../firebase/firebaseConfig';
 
-export default function FeedbackScreen() {
+const FeedbackScreen = ({ route }) => {
+  const { currentUser } = useContext(UserContext);
+  const { receiverId } = route.params || {}; // Fetch receiverId from params
+
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [averageRating, setAverageRating] = useState(0);
@@ -20,16 +22,20 @@ export default function FeedbackScreen() {
   ]);
 
   useEffect(() => {
-    fetchRatings();
-  }, []);
+    if (receiverId) {
+      fetchRatings();
+    } else {
+      Alert.alert('Error', 'Receiver ID is missing.');
+    }
+  }, [receiverId]);
 
   const fetchRatings = async () => {
     try {
       const database = firebase.database();
-      const snapshot = await database.ref('ratings').once('value');
+      const snapshot = await database.ref('ratings').orderByChild('users/1').equalTo(receiverId).once('value');
       const ratingsData = snapshot.val() || {};
       const ratingList = Object.values(ratingsData);
-      
+
       if (ratingList.length > 0) {
         const totalRating = ratingList.reduce((acc, item) => acc + item.rating, 0);
         const count = ratingList.length;
@@ -50,16 +56,29 @@ export default function FeedbackScreen() {
       return;
     }
 
+    if (!receiverId) {
+      Alert.alert('Receiver ID is missing');
+      return;
+    }
+
     try {
       const database = firebase.database();
       const newRatingRef = database.ref('ratings').push();
       const timestamp = Date.now();
 
-      await newRatingRef.set({
+      const ratingData = {
         rating,
         comment: comment || "", // Ensure comment is never undefined or null
         timestamp,
-      });
+        users: {
+          0: currentUser.email,  // Sender
+          1: receiverId          // Receiver
+        }
+      };
+
+      console.log('Rating Data:', ratingData); // Log the rating data for debugging
+
+      await newRatingRef.set(ratingData);
 
       Alert.alert('Thank you!', 'Your rating has been submitted.');
       // Clear the comment and rating after submission
@@ -67,7 +86,8 @@ export default function FeedbackScreen() {
       setRating(0);
       fetchRatings(); // Refresh ratings data
     } catch (error) {
-      console.error("Error submitting rating: ", error);
+      console.error('Error submitting rating:', error);
+      Alert.alert('Submission Error', 'There was an error submitting your rating. Please try again later.');
     }
   };
 
@@ -138,7 +158,7 @@ export default function FeedbackScreen() {
       </View>
     </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -245,7 +265,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   averageRatingValue: {
-    fontSize: 28,
+    fontSize: 32,
     color: '#32a4a8',
     fontWeight: 'bold',
   },
@@ -268,11 +288,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   totalRatingValue: {
-    fontSize: 28,
+    fontSize: 32,
     color: '#32a4a8',
     fontWeight: 'bold',
   },
 });
 
-export { FeedbackScreen };
-
+export default FeedbackScreen;

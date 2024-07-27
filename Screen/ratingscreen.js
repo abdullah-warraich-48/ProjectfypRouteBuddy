@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, ScrollView, StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { firebase } from '../firebase/firebaseConfig'; // Adjust path if necessary
 
 const UserRatingScreen = ({ route }) => {
-  // Destructure userId from route.params with a default fallback
   const { userId } = route.params || {};
-
   const [userData, setUserData] = useState({});
   const [ratings, setRatings] = useState([]);
   const [averageRating, setAverageRating] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (userId) {
@@ -16,6 +16,7 @@ const UserRatingScreen = ({ route }) => {
       fetchRatings();
     } else {
       console.error('User ID is missing');
+      setLoading(false);
     }
   }, [userId]);
 
@@ -25,9 +26,12 @@ const UserRatingScreen = ({ route }) => {
       const snapshot = await userRef.once('value');
       if (snapshot.exists()) {
         setUserData(snapshot.val());
+      } else {
+        setError('User data not found');
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
+      setError('Error fetching user data');
     }
   };
 
@@ -36,8 +40,8 @@ const UserRatingScreen = ({ route }) => {
       const ratingsRef = firebase.database().ref('ratings');
       const snapshot = await ratingsRef.once('value');
       const ratingsData = snapshot.val() || {};
-      const userRatings = Object.values(ratingsData).filter(rating => rating.users[1] === userId);
-      
+      const userRatings = Object.values(ratingsData).filter(rating => rating.users[1] === userData.email);
+
       if (userRatings.length > 0) {
         const totalRating = userRatings.reduce((acc, item) => acc + item.rating, 0);
         setAverageRating(totalRating / userRatings.length);
@@ -48,6 +52,9 @@ const UserRatingScreen = ({ route }) => {
       }
     } catch (error) {
       console.error('Error fetching ratings:', error);
+      setError('Error fetching ratings');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -57,6 +64,23 @@ const UserRatingScreen = ({ route }) => {
       <Text style={styles.feedbackRating}>Rating: {item.rating}</Text>
     </View>
   );
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#32a4a8" />
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text>{error}</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -76,11 +100,15 @@ const UserRatingScreen = ({ route }) => {
 
       <View style={styles.feedbackSection}>
         <Text style={styles.feedbackTitle}>Feedback Received</Text>
-        <FlatList
-          data={ratings}
-          renderItem={renderRatingItem}
-          keyExtractor={(item, index) => index.toString()}
-        />
+        {ratings.length === 0 ? (
+          <Text>No feedback available</Text>
+        ) : (
+          <FlatList
+            data={ratings}
+            renderItem={renderRatingItem}
+            keyExtractor={(item, index) => index.toString()}
+          />
+        )}
       </View>
     </ScrollView>
   );
@@ -165,6 +193,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#555',
     marginTop: 5,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
   },
 });
 

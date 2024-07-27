@@ -15,6 +15,7 @@ const Driver = ({ route }) => {
 
   const currentUserEmail = currentUser?.email;
   const { driverData } = route?.params || {};
+  //console.log(driverData)
 
   useEffect(() => {
     const fetchChatId = async () => {
@@ -57,6 +58,7 @@ const Driver = ({ route }) => {
       fetchChatId();
     }
   }, [currentUserEmail, driverData?.email, currentUser, driverData]);
+  
 
   if (!driverData) {
     return (
@@ -118,7 +120,8 @@ const Driver = ({ route }) => {
       </View>
 
       <View style={styles.optionsContainer}>
-        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('feedback', { driverId: driverData?.id })}>
+        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('feedback', { receiverId: driverData.email })}>
+         
           <FontAwesome name="star" size={24} color="black" />
           <Text style={styles.optionLabel}>Rate</Text>
         </TouchableOpacity>
