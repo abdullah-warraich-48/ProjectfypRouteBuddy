@@ -1,4 +1,4 @@
-import { Picker } from '@react-native-picker/picker';
+import { Picker } from '@react-native-picker/picker'; // Importing Picker component from the correct package
 import { useNavigation } from '@react-navigation/native';
 import React, { useContext, useEffect, useState } from 'react';
 import { Button, FlatList, Image, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -99,33 +99,31 @@ const Map = () => {
     setModalVisible(false);
   };
 
-  const renderItem = ({ item }) => {
-    return (
-      <TouchableOpacity
-        style={styles.cardContainer}
-        onPress={() => {
-          try {
-            navigation.navigate('Driver', { driverData: item });
-          } catch (e) {
-            console.error('Navigation error:', e.message);
-          }
-        }}
-      >
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: item.licenseImageUrl }} style={styles.image} />
-        </View>
-        <View style={styles.detailsContainer}>
-          <Text style={styles.driverName}>{item.firstName} {item.lastName}</Text>
-          <Text style={styles.vehicleDetails}>
-            Vehicle: {item.vehicleType || 'N/A'}
-          </Text>
-          <Text style={styles.paymentInfo}>
-            Monthly PKR: {item.price || 'N/A'}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.cardContainer}
+      onPress={() => {
+        try {
+          navigation.navigate('Driver', { driverData: item });
+        } catch (e) {
+          console.error('Navigation error:', e.message);
+        }
+      }}
+    >
+      <View style={styles.imageContainer}>
+        <Image source={{ uri: item.licenseImageUrl }} style={styles.image} />
+      </View>
+      <View style={styles.detailsContainer}>
+        <Text style={styles.driverName}>{item.firstName} {item.lastName}</Text>
+        <Text style={styles.vehicleDetails}>
+          Vehicle: {item.vehicleType || 'N/A'}
+        </Text>
+        <Text style={styles.paymentInfo}>
+          Monthly PKR: {item.price || 'N/A'}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
@@ -147,7 +145,7 @@ const Map = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalHeader}>Select Filters</Text>
-{/* 
+
             <Picker
               selectedValue={selectedTime}
               style={styles.dropdown}
@@ -156,7 +154,7 @@ const Map = () => {
               {availableTimes.map((time, index) => (
                 <Picker.Item key={index} label={time} value={time} />
               ))}
-            </Picker> */}
+            </Picker>
 
             <Picker
               selectedValue={selectedVehicle}
