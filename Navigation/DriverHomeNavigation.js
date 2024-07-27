@@ -4,7 +4,7 @@ import React from 'react';
 import driverprofile from '../Screen/driverprofile';
 import MyIncome from '../Screen/MyIncome';
 import NotificationReceiverScreen from '../Screen/NotificationReceiverScreen';
-import Rating from '../Screen/Rating';
+import ratingscreen from '../Screen/ratingscreen';
 
 const DriverTab = createBottomTabNavigator();
 
@@ -19,7 +19,7 @@ const DriverHomeNavigation = () => {
             iconName = focused ? 'car' : 'car-outline';
           } else if (route.name === 'MyIncome') {
             iconName = focused ? 'cash' : 'cash-outline';
-          } else if (route.name === 'Rating') {
+          } else if (route.name === 'ratingscreen') {
             iconName = focused ? 'star' : 'star-outline';
           } else if (route.name === 'driverprofile') {
             iconName = focused ? '' : 'person-outline';
@@ -35,7 +35,7 @@ const DriverHomeNavigation = () => {
     >
       <DriverTab.Screen name="NotificationScreen" component={NotificationReceiverScreen} />
       <DriverTab.Screen name="MyIncome" component={MyIncome} />
-      <DriverTab.Screen name="Rating" component={Rating} />
+      <DriverTab.Screen name="ratingscreen" component={ratingscreen} />
       <DriverTab.Screen name="Profile" component={driverprofile} />
     </DriverTab.Navigator>
   );
