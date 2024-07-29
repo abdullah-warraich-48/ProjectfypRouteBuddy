@@ -6,7 +6,7 @@ import { firebase } from '../firebase/firebaseConfig';
 
 const FeedbackScreen = ({ route }) => {
   const { currentUser } = useContext(UserContext);
-  const { receiverId } = route.params || {}; // Fetch receiverId from params
+  const { receiverId } = route.params || {}; 
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
