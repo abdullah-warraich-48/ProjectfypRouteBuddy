@@ -1,8 +1,8 @@
-import { Ionicons } from '@expo/vector-icons'; // Assuming you're using Expo icons
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import MapView, { Polyline } from 'react-native-maps'; // Import MapView and Polyline
+import MapView, { Polyline } from 'react-native-maps';
 
 const Location = () => {
   const navigation = useNavigation();
@@ -10,24 +10,20 @@ const Location = () => {
   const [destination, setDestination] = useState('');
   const [coordinates, setCoordinates] = useState([]);
 
-  // Function to handle submission of location and destination
   const handleSubmit = () => {
-    // Here you can handle the submission, for example, navigate to the next screen
     console.log('Origin:', origin);
     console.log('Destination:', destination);
-    // Here you can fetch the route coordinates between origin and destination and set them
-    // For simplicity, let's just add some dummy coordinates
     setCoordinates([
       { latitude: 32.166351, longitude: 74.195900 },
       { latitude: 32.166351, longitude: 74.195900 },
     ]);
+    navigation.navigate('Map');
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.inputWrapper}>
-        <View style={styles.line}></View>
-        <Ionicons name="location-sharp" size={24} color="black" />
+        <Ionicons name="location-sharp" size={24} color="#32a4a8" />
         <TextInput
           style={styles.input}
           placeholder="Enter pick-up location"
@@ -36,8 +32,7 @@ const Location = () => {
         />
       </View>
       <View style={styles.inputWrapper}>
-        <View style={styles.line}></View>
-        <Ionicons name="navigate" size={24} color="black" />
+        <Ionicons name="navigate" size={24} color="#32a4a8" />
         <TextInput
           style={styles.input}
           placeholder="Enter destination"
@@ -45,11 +40,19 @@ const Location = () => {
           onChangeText={setDestination}
         />
       </View>
-      <TouchableOpacity style={styles.locationButton} onPress={() => navigation.navigate('Map')}>
-        <Text style={styles.buttonText}>Location</Text>
+      <TouchableOpacity style={styles.locationButton} onPress={handleSubmit}>
+        <Text style={styles.buttonText}>Set Location</Text>
       </TouchableOpacity>
-      <MapView style={styles.map} initialRegion={{ latitude: 37.78825, longitude: -122.4324, latitudeDelta: 0.0922, longitudeDelta: 0.0421 }}>
-        {coordinates.length > 0 && <Polyline coordinates={coordinates} strokeWidth={4} strokeColor="blue" />}
+      <MapView
+        style={styles.map}
+        initialRegion={{
+          latitude: 32.166351,
+          longitude: 74.195900,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
+      >
+        {coordinates.length > 0 && <Polyline coordinates={coordinates} strokeWidth={4} strokeColor="#32a4a8" />}
       </MapView>
     </View>
   );
@@ -58,39 +61,42 @@ const Location = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  map: {
-    flex: 1,
+    backgroundColor: '#fff',
+    paddingTop: 50,
+    paddingHorizontal: 20,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    paddingBottom: 10,
   },
   input: {
     flex: 1,
     marginLeft: 10,
     height: 40,
-    borderBottomWidth: 1,
-    borderColor: 'gray',
-    paddingHorizontal: 10,
+    fontSize: 16,
+    color: '#333',
   },
-  line: {
-    width: 1,
-    height: '100%',
-    backgroundColor: 'gray',
-    marginRight: 10,
-  },
-  button: {
-    backgroundColor: 'blue',
+  locationButton: {
+    backgroundColor: '#32a4a8',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 5,
+    borderRadius: 25,
     alignSelf: 'center',
+    marginVertical: 20,
   },
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
+    fontSize: 16,
+  },
+  map: {
+    flex: 1,
+    width: '100%',
+    marginTop: 10,
   },
 });
 

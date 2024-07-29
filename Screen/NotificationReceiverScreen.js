@@ -1,14 +1,9 @@
 import { useNavigation } from '@react-navigation/native';
 import { get, onValue, push, ref, update } from 'firebase/database';
 import React, { useContext, useEffect, useState } from 'react';
-import { Button, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Alert, Button, FlatList, StyleSheet, Text, View } from 'react-native';
 import { UserContext } from '../context/UserContext';
 import { firebase } from '../firebase/firebaseConfig';
-
-// Function to sanitize driver ID for Firebase paths
-const sanitizePath = (path) => {
-  return path.replace(/[\.\#\$\[\]\s]/g, '_');
-};
 
 const Notifications = () => {
   const navigation = useNavigation();
@@ -20,11 +15,14 @@ const Notifications = () => {
   // Fetch all driver data
   const fetchAllDrivers = async () => {
     try {
-      const driversRef = ref(firebase.database(), 'driverRef');
+      const driversRef = ref(firebase.database(), 'driverRef'); 
       const snapshot = await get(driversRef);
+
       if (snapshot.exists()) {
         const driversData = snapshot.val();
         setDrivers(driversData);
+        
+        //console.log(driversData);
       } else {
         console.log('No drivers data available');
       }
@@ -57,15 +55,16 @@ const Notifications = () => {
           if (Array.isArray(notification.users) && !notification.users.includes(undefined)) {
             // Check if current user is the recipient
             if (notification.users.includes(currentUserEmail)) {
-              // Assume sender is always the first user
-              const senderEmail = notification.users[0];
+              // Assume driver is always in the users array at index 1
+              const driverId = notification.users[1];
+              
 
               userNotifications.push({
                 notificationId: notificationKey,
-                senderEmail: senderEmail,
+                senderEmail: notification.users[0],
                 message: notification.message,
                 status: notification.status || 'pending',
-                driverId: notification.driverId,
+                driverId: driverId,
               });
             }
           } else {
@@ -87,69 +86,79 @@ const Notifications = () => {
 
   // Handle accept notification
   const handleAccept = async (notificationId) => {
-    try {
-      const notificationRef = ref(firebase.database(), `notifications/${notificationId}`);
-      const snapshot = await get(notificationRef);
+    Alert.alert(
+      'Confirm Acceptance',
+      'Are you sure you want to accept this notification?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Accept',
+          onPress: async () => {
+            try {
+              const notificationRef = ref(firebase.database(), `notifications/${notificationId}`);
+              const snapshot = await get(notificationRef);
 
-      if (snapshot.exists()) {
-        const notification = snapshot.val();
-        if (notification && Array.isArray(notification.users)) {
-          // Check if the current user is in the notification's users list
-          if (notification.users.includes(currentUser.email)) {
-            // Assume driverId is always at position 1
-            const driverId = sanitizePath(notification.users[1]); // Sanitize the driver ID
-            console.log('Sanitized Driver ID:', driverId);
+              if (snapshot.exists()) {
+                const notification = snapshot.val();
+                if (notification && Array.isArray(notification.users)) {
+                  // Check if the current user is in the notification's users list
+                  if (notification.users.includes(currentUser.email)) {
+                    console.log(currentUser.email);
+                    // Fetch driver data based on driverId
+                    const driverId = notification.users[1]; // Index 1 represents the driver
+                    const encodedDriverId = encodeURIComponent(driverId); // Encode driver ID
+                    const driverRef = ref(firebase.database(), `drivers/${encodedDriverId}`);
+                    const driverSnapshot = await get(driverRef);
+                    
+                    
+                    if (driverSnapshot.exists()) {
+                      const driverData = driverSnapshot.val();
+                      // console.log(driverData);
 
-            // Fetch the driver data based on driverId
-            const driverRef = ref(firebase.database(), `driverRef/${driverId}`);
-            console.log('Driver Ref Path:', driverRef.toString());
-            const driverSnapshot = await get(driverRef);
-            
-            if (driverSnapshot.exists()) {
-              const driverData = driverSnapshot.val();
+                      // Update the notification status to 'accepted' and add the receiverId
+                      await update(notificationRef, { status: 'accepted', receiverId: currentUser.uid });
+                      console.log(`Accepted notification with ID: ${notificationId}`);
 
-              // Log driver data to console
-              console.log('Driver Data:', driverData);
+                      // Create a new notification for the sender
+                      const senderNotificationRef = ref(firebase.database(), 'notifications');
+                      const newNotification = {
+                        senderEmail: currentUser.email,
+                        users: [notification.users[0]], // Use senderEmail as the recipient
+                        message: `Your request has been accepted by ${currentUser.email}`,
+                        status: 'pending',
+                      };
+                      await push(senderNotificationRef, newNotification);
+                      console.log('Notification sent to the sender about acceptance.');
 
-              // Update the notification status to 'accepted' and add the receiverId
-              await update(notificationRef, { status: 'accepted', receiverId: currentUser.uid });
-              console.log(`Accepted notification with ID: ${notificationId}`);
-
-              // Create a new notification for the sender
-              const senderNotificationRef = ref(firebase.database(), 'notifications');
-              const newNotification = {
-                senderEmail: currentUser.email,
-                users: [notification.users[0]], // Use senderEmail as the recipient
-                message: `Your request has been accepted by ${currentUser.email}`,
-                status: 'pending',
-              };
-              await push(senderNotificationRef, newNotification);
-              console.log('Notification sent to the sender about acceptance.');
-
-              // Navigate to History screen and pass driver data
-              navigation.navigate('History', {
-                driverData: {
-                  arrivalTime: driverData.arrivalTime,
-                  departureTime: driverData.departureTime,
-                  destination: driverData.destination,
-                  price: driverData.price,
+                      // Navigate to booking screen and pass driver data
+                      navigation.navigate('Booking', {
+                        driverData: {
+                          arrivalTime: driverData.arrivalTime,
+                          departureTime: driverData.departureTime,
+                          destination: driverData.destination,
+                          price: driverData.price,
+                        }
+                      });
+                    } else {
+                      console.error(`Driver data does not exist for driverId: ${encodedDriverId}`);
+                    }
+                  } else {
+                    console.error('Current user is not in the notification users list.');
+                  }
+                } else {
+                  console.error('Invalid notification structure:', notification);
                 }
-              });
-            } else {
-              console.error(`Driver data does not exist for driverId: ${driverId}`);
+              } else {
+                console.error('Notification does not exist:', notificationId);
+              }
+            } catch (error) {
+              console.error('Error accepting notification:', error.message);
             }
-          } else {
-            console.error('Current user is not in the notification users list.');
-          }
-        } else {
-          console.error('Invalid notification structure:', notification);
-        }
-      } else {
-        console.error('Notification does not exist:', notificationId);
-      }
-    } catch (error) {
-      console.error('Error accepting notification:', error.message);
-    }
+          },
+        },
+      ],
+      { cancelable: false }
+    );
   };
 
   // Handle decline notification
@@ -163,22 +172,9 @@ const Notifications = () => {
         if (notification && Array.isArray(notification.users)) {
           // Check if the current user is in the notification's users list
           if (notification.users.includes(currentUser.email)) {
-            // Assume sender is always the first user
-            const senderEmail = notification.users[0];
             // Update the notification status to 'declined'
             await update(notificationRef, { status: 'declined' });
             console.log(`Declined notification with ID: ${notificationId}`);
-
-            // Create a new notification for the sender
-            const senderNotificationRef = ref(firebase.database(), 'notifications');
-            const newNotification = {
-              senderEmail: currentUser.email,
-              users: [senderEmail], // Use senderEmail as the recipient
-              message: `Your request has been declined by ${currentUser.email}`,
-              status: 'pending',
-            };
-            await push(senderNotificationRef, newNotification);
-            console.log('Notification sent to the sender about decline.');
           } else {
             console.error('Current user is not in the notification users list.');
           }
@@ -201,7 +197,7 @@ const Notifications = () => {
   }, [currentUser]);
 
   const renderItem = ({ item }) => {
-    const driverData = item.driverId ? drivers[sanitizePath(item.driverId)] : null; // Use sanitized driver ID
+    const driverData = item.driverId ? drivers[item.driverId] : null; // Access driver data directly by driverId
 
     return (
       <View style={styles.notificationCard}>
@@ -209,7 +205,7 @@ const Notifications = () => {
         <Text style={styles.message}>{item.message}</Text>
         {driverData && (
           <View style={styles.driverInfo}>
-            <Text>Driver Name: {driverData.name}</Text>
+            <Text>Driver Name: {driverData.name}</Text> {/* Assuming 'name' field exists */}
             <Text>Driver Email: {driverData.email}</Text>
           </View>
         )}

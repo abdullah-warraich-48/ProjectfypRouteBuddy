@@ -1,11 +1,10 @@
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { firebase } from '../firebase/firebaseConfig'; // Import Firebase configuration
 
 const VehicleInfo = () => {
   const navigation = useNavigation();
@@ -16,15 +15,8 @@ const VehicleInfo = () => {
   const [seats, setSeats] = useState('1');
   const [color, setColor] = useState('Red');
   const [uploading, setUploading] = useState(false);
-  const [dropdownData, setDropdownData] = useState({
-    vehicles: ['Car', 'Van', 'carryBox', 'Rikshaw', 'Bike'],
-    models: ['2019', '2020', '2021'],
-    seats: ['1', '2', '3'],
-    colors: ['Red', 'Blue', 'Green'],
-  });
 
   useEffect(() => {
-    fetchDropdownData();
     (async () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
@@ -32,18 +24,6 @@ const VehicleInfo = () => {
       }
     })();
   }, []);
-
-  const fetchDropdownData = async () => {
-    try {
-      const snapshot = await firebase.database().ref('dropdownData').once('value');
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        setDropdownData(data);
-      }
-    } catch (error) {
-      console.error('Error fetching dropdown data:', error.message);
-    }
-  };
 
   const handleChooseImage = async () => {
     try {
@@ -55,7 +35,7 @@ const VehicleInfo = () => {
       });
 
       if (!result.cancelled) {
-        setImageUri(result.uri);
+        setImageUri(result.assets[0].uri);
       } else {
         console.log('Image selection cancelled');
       }
@@ -64,46 +44,27 @@ const VehicleInfo = () => {
     }
   };
 
-  const uploadImage = async (uri) => {
-    try {
-      setUploading(true);
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const storageRef = ref(firebase.storage(), `vehicles/${Date.now()}`);
-      await uploadBytes(storageRef, blob);
-      const downloadURL = await getDownloadURL(storageRef);
-      setUploading(false);
-      return downloadURL;
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      setUploading(false);
-      throw error;
-    }
-  };
+  const handleNext = () => {
+    const {
+      firstName,
+      lastName,
+      phoneNumber,
+      address,
+      age,
+      licenseImageUri,
+    } = route.params || {}; 
 
-  const handleNext = async () => {
-    let vehicleImageUrl = null;
-
-    if (imageUri) {
-      try {
-        vehicleImageUrl = await uploadImage(imageUri);
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        Alert.alert('Upload Failed', 'There was an issue uploading the image. Please try again.');
-        return;
-      }
-    }
-
-    console.log('Selected Vehicle:', selectedVehicle); // Debugging statement
-    console.log('Model:', model); // Debugging statement
-    console.log('Seats:', seats); // Debugging statement
-    console.log('Color:', color); // Debugging statement
-
+    // Navigate to the next screen with the collected data
     navigation.navigate('Routeinfo', {
-      ...route.params,
-      vehicleType: selectedVehicle,
+      firstName,
+      lastName,
+      phoneNumber,
+      address,
+      age,
+      licenseImageUri,
+      selectedVehicle,
       model,
-      vehicleImageUri: vehicleImageUrl,
+      vehicleImageUri: imageUri, // Pass the image URI directly
       seats,
       color,
     });
@@ -121,12 +82,22 @@ const VehicleInfo = () => {
           </View>
         </View>
         <View style={styles.iconContainer}>
+          <Svg height="30" width="30">
+            <Path d="M5 15 L25 15" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+          </Svg>
+        </View>
+        <View style={styles.iconContainer}>
           <View style={styles.circle}>
             <TouchableOpacity style={styles.locationButton} onPress={() => navigation.navigate('VehicleInfo')}>
               <Icon name="car" size={30} color="#000" style={styles.icon} />
             </TouchableOpacity>
             <Text style={styles.text}>Vehicle</Text>
           </View>
+        </View>
+        <View style={styles.iconContainer}>
+          <Svg height="30" width="30">
+            <Path d="M5 15 L25 15" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+          </Svg>
         </View>
         <View style={styles.iconContainer}>
           <View style={styles.circle}>
@@ -146,9 +117,9 @@ const VehicleInfo = () => {
             onValueChange={(itemValue) => setSelectedVehicle(itemValue)}
             style={styles.picker}
           >
-            {dropdownData.vehicles.map((vehicle, index) => (
-              <Picker.Item key={index} label={vehicle} value={vehicle} />
-            ))}
+            <Picker.Item label="Car" value="Car" />
+            <Picker.Item label="Van" value="Van" />
+            <Picker.Item label="Truck" value="Truck" />
           </Picker>
         </View>
 
@@ -159,9 +130,9 @@ const VehicleInfo = () => {
             onValueChange={(itemValue) => setModel(itemValue)}
             style={styles.picker}
           >
-            {dropdownData.models.map((model, index) => (
-              <Picker.Item key={index} label={model} value={model} />
-            ))}
+            <Picker.Item label="2019" value="2019" />
+            <Picker.Item label="2020" value="2020" />
+            <Picker.Item label="2021" value="2021" />
           </Picker>
         </View>
 
@@ -172,9 +143,9 @@ const VehicleInfo = () => {
             onValueChange={(itemValue) => setSeats(itemValue)}
             style={styles.picker}
           >
-            {dropdownData.seats.map((seat, index) => (
-              <Picker.Item key={index} label={seat} value={seat} />
-            ))}
+            <Picker.Item label="1" value="1" />
+            <Picker.Item label="2" value="2" />
+            <Picker.Item label="3" value="3" />
           </Picker>
         </View>
 
@@ -185,9 +156,9 @@ const VehicleInfo = () => {
             onValueChange={(itemValue) => setColor(itemValue)}
             style={styles.picker}
           >
-            {dropdownData.colors.map((color, index) => (
-              <Picker.Item key={index} label={color} value={color} />
-            ))}
+            <Picker.Item label="Red" value="Red" />
+            <Picker.Item label="Blue" value="Blue" />
+            <Picker.Item label="Green" value="Green" />
           </Picker>
         </View>
 
@@ -209,7 +180,7 @@ const VehicleInfo = () => {
       </View>
     </View>
   );
-};         
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -248,10 +219,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: 20,
     paddingHorizontal: 25,
-    paddingVertical: 15,
+    paddingBottom: 20,
   },
   inputGroup: {
-    marginBottom: 10,
+    marginBottom: 20,
   },
   label: {
     fontSize: 16,
@@ -259,6 +230,9 @@ const styles = StyleSheet.create({
   },
   picker: {
     height: 40,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 5,
     backgroundColor: '#fff',
   },
   imageContainer: {
@@ -275,12 +249,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#32a4a8',
     paddingVertical: 10,
     borderRadius: 5,
+    width: '100%',
     marginTop: 20,
   },
   buttonText: {
     color: '#fff',
     textAlign: 'center',
-    fontSize: 18,
+    fontWeight: 'bold',
   },
 });
 

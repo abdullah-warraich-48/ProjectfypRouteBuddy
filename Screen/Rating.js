@@ -1,12 +1,11 @@
-// FeedbackScreen.js
-
 import React, { useEffect, useState } from 'react';
 import { Alert, FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { AirbnbRating } from 'react-native-ratings';
 import { firebase } from '../firebase/firebaseConfig'; // Ensure firebase is imported correctly
 
-export default function FeedbackScreen() {
-  const [rating, setRating] = useState(0);
+export default function FeedbackScreen({ route }) {
+  const { senderId, receiverEmail } = route.params; // Assuming you pass these params from previous screen
+
   const [comment, setComment] = useState('');
   const [averageRating, setAverageRating] = useState(0);
   const [ratingsCount, setRatingsCount] = useState(0);
@@ -26,10 +25,10 @@ export default function FeedbackScreen() {
   const fetchRatings = async () => {
     try {
       const database = firebase.database();
-      const snapshot = await database.ref('ratings').once('value');
+      const snapshot = await database.ref(`ratings/${receiverEmail}`).once('value');
       const ratingsData = snapshot.val() || {};
       const ratingList = Object.values(ratingsData);
-      
+
       if (ratingList.length > 0) {
         const totalRating = ratingList.reduce((acc, item) => acc + item.rating, 0);
         const count = ratingList.length;
@@ -45,26 +44,22 @@ export default function FeedbackScreen() {
   };
 
   const submitRating = async () => {
-    if (rating === 0) {
-      Alert.alert('Please provide a rating');
-      return;
-    }
-
     try {
       const database = firebase.database();
-      const newRatingRef = database.ref('ratings').push();
+      const newRatingRef = database.ref(`ratings/${receiverEmail}`).push();
       const timestamp = Date.now();
 
       await newRatingRef.set({
-        rating,
+        rating: 1, // Always send rating 1
         comment: comment || "", // Ensure comment is never undefined or null
         timestamp,
+        senderId,
+        receiverEmail
       });
 
       Alert.alert('Thank you!', 'Your rating has been submitted.');
-      // Clear the comment and rating after submission
+      // Clear the comment after submission
       setComment('');
-      setRating(0);
       fetchRatings(); // Refresh ratings data
     } catch (error) {
       console.error("Error submitting rating: ", error);
@@ -93,8 +88,9 @@ export default function FeedbackScreen() {
         <AirbnbRating
           size={40}
           defaultRating={0}
-          onFinishRating={value => setRating(value)}
+          onFinishRating={() => {}}
           starContainerStyle={styles.starContainer}
+          isDisabled
         />
       </View>
 
@@ -273,6 +269,3 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-
-export { FeedbackScreen };
-

@@ -1,23 +1,45 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import React, { useContext, useEffect, useState } from 'react';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { AirbnbRating } from 'react-native-ratings'; // Import AirbnbRating component
+import { UserContext } from '../context/UserContext';
 import { firebase } from '../firebase/firebaseConfig'; // Ensure this path is correct
 
 const UserRatingScreen = () => {
+  const { currentUser } = useContext(UserContext);
   const [userRatings, setUserRatings] = useState([]);
   const [averageRating, setAverageRating] = useState(0);
 
   useEffect(() => {
     const fetchRatings = async () => {
+      if (!currentUser || !currentUser.email) {
+        console.error("Current user or email is not defined");
+        return;
+      }
+
+      console.log("Fetching ratings for:", currentUser.email); // Debugging line
+
       try {
         const snapshot = await firebase.database().ref('ratings').once('value');
-        const ratingsData = snapshot.val();
-        const ratingsArray = Object.values(ratingsData || {});
+        
+        console.log("Snapshot:", snapshot.val());
+        const ratingsData = snapshot.val() || {};
+        const ratingsArray = Object.values(ratingsData);
 
-        setUserRatings(ratingsArray);
+        // Check if each rating object contains receiverEmail
+        console.log("Ratings Array:", ratingsArray);
 
-        if (ratingsArray.length > 0) {
-          const totalRating = ratingsArray.reduce((acc, item) => acc + item.rating, 0);
-          setAverageRating(totalRating / ratingsArray.length);
+        // Filter ratings to include only those where receiverEmail matches the current user's email
+        const filteredRatings = ratingsArray.filter(rating => {
+          console.log("Rating:", rating);
+          return rating.users && rating.users[1] === currentUser.email;
+        });
+
+        console.log("Filtered Ratings:", filteredRatings);
+        setUserRatings(filteredRatings);
+
+        if (filteredRatings.length > 0) {
+          const totalRating = filteredRatings.reduce((acc, item) => acc + item.rating, 0);
+          setAverageRating(totalRating / filteredRatings.length);
         } else {
           setAverageRating(0);
         }
@@ -27,18 +49,38 @@ const UserRatingScreen = () => {
     };
 
     fetchRatings();
-  }, []);
+  }, [currentUser.email]);
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>User Rating</Text>
-      <Text style={styles.averageRating}>Average Rating: {averageRating.toFixed(1)}</Text>
+      
+      {/* Display average rating as stars */}
+      <View style={styles.averageRatingContainer}>
+        <Text style={styles.averageRatingLabel}>Average Rating:</Text>
+        <AirbnbRating
+          count={5}
+          size={30}
+          isDisabled
+          defaultRating={averageRating}
+          showRating={false}
+        />
+        <Text style={styles.averageRatingValue}>{averageRating.toFixed(1)}</Text>
+      </View>
+
       <FlatList
         data={userRatings}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
           <View style={styles.ratingItem}>
-            <Text style={styles.ratingText}>Rating: {item.rating}</Text>
+            {/* Display rating as stars */}
+            {/* <AirbnbRating
+              count={5}
+              size={20}
+              isDisabled
+              defaultRating={item.rating}
+              showRating={false}
+            /> */}
             <Text style={styles.commentText}>Comment: {item.comment}</Text>
           </View>
         )}
@@ -56,17 +98,22 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
-  averageRating: {
+  averageRatingContainer: {
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  averageRatingLabel: {
     fontSize: 20,
-    marginVertical: 10,
+    marginBottom: 10,
+  },
+  averageRatingValue: {
+    fontSize: 20,
+    marginTop: 5,
   },
   ratingItem: {
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
-  },
-  ratingText: {
-    fontSize: 16,
   },
   commentText: {
     fontSize: 14,

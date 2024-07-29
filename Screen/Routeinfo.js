@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { UserContext } from '../context/UserContext';
-import { firebase } from '../firebase/firebaseConfig'; // Adjust this import based on your project structure
+import { database, storage } from '../firebase/firebaseConfig';
 
 const Routeinfo = () => {
   const { currentUser } = useContext(UserContext);
@@ -50,6 +50,23 @@ const Routeinfo = () => {
     setArrivalPickerVisibility(false);
   };
 
+  const uploadImage = async (uri) => {
+    try {
+      setUploading(true);
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const storageRef = storage.ref().child(`images/${Date.now()}_${uri.split('/').pop()}`);
+      const snapshot = await storageRef.put(blob);
+      const downloadURL = await snapshot.ref.getDownloadURL();
+      setUploading(false);
+      return downloadURL;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setUploading(false);
+      throw error;
+    }
+  };
+
   const handleSaveData = async () => {
     let isValid = true;
 
@@ -90,28 +107,30 @@ const Routeinfo = () => {
 
     if (!isValid) return;
 
-    const routeInfo = {
-      email: currentUser.email,
-      firstName,
-      lastName,
-      phoneNumber,
-      address,
-      age,
-      vehicleType,
-      seats,
-      model,
-      startPoint,
-      destination,
-      departureTime,
-      arrivalTime,
-      price,
-      vehicleImageUri,
-      licenseImageUri,
-    };
-
     try {
-      const database = firebase.database();
-      const driverRef = await database.ref('driverRef').push(routeInfo);
+      const vehicleImageUrl = vehicleImageUri ? await uploadImage(vehicleImageUri) : '';
+      const licenseImageUrl = licenseImageUri ? await uploadImage(licenseImageUri) : '';
+
+      const routeInfo = {
+        email: currentUser.email,
+        firstName,
+        lastName,
+        phoneNumber,
+        address,
+        age,
+        vehicleType,
+        seats,
+        model,
+        startPoint,
+        destination,
+        departureTime,
+        arrivalTime,
+        price,
+        vehicleImageUrl,
+        licenseImageUrl,
+      };
+
+      await database.ref('driverRef').push(routeInfo);
       console.log('Route info saved successfully');
       navigation.navigate('DriverHome', { screen: 'RideRequest' });
     } catch (error) {
