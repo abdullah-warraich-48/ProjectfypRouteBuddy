@@ -6,11 +6,13 @@ import { firebase } from '../firebase/firebaseConfig';
 
 const SignUp = () => {
   const navigation = useNavigation();
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [nameError, setNameError] = useState('');
+  const [firstNameError, setFirstNameError] = useState('');
+  const [lastNameError, setLastNameError] = useState('');
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
@@ -18,14 +20,21 @@ const SignUp = () => {
 
   const handleSignUp = async () => {
     // Reset error messages
-    setNameError('');
+    setFirstNameError('');
+    setLastNameError('');
     setEmailError('');
     setPasswordError('');
     setConfirmPasswordError('');
 
-    // Validate name
-    if (!name.trim()) {
-      setNameError('Name is required');
+    // Validate first name
+    if (!firstName.trim()) {
+      setFirstNameError('First Name is required');
+      return;
+    }
+
+    // Validate last name
+    if (!lastName.trim()) {
+      setLastNameError('Last Name is required');
       return;
     }
 
@@ -44,7 +53,7 @@ const SignUp = () => {
       return;
     }
 
-    // Validate confirm password
+    // Validate re-password
     if (!confirmPassword.trim()) {
       setConfirmPasswordError('Re-Type Password is required');
       return;
@@ -55,21 +64,18 @@ const SignUp = () => {
 
     try {
       const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
-      const userId = userCredential.user.uid;
+      const { uid } = userCredential.user;
 
-      // Store user data in Firebase Realtime Database
-      const userRef = firebase.database().ref(`users/${userId}`);
-      await userRef.set({
-        name,
+      // Save additional user data to Firebase Realtime Database
+      await firebase.database().ref(`users/${uid}`).set({
+        firstName,
+        lastName,
         email,
       });
 
-      console.log('User data stored in Realtime Database:', userRef);
-
-      await AsyncStorage.setItem('userToken', userId);
-
       // Reset fields after sign-up
-      setName('');
+      setFirstName('');
+      setLastName('');
       setEmail('');
       setPassword('');
       setConfirmPassword('');
@@ -79,7 +85,7 @@ const SignUp = () => {
     } catch (error) {
       console.error('Sign-up error:', error.message);
       // Display error message
-      setNameError('Failed to sign up. Please try again later.');
+      setFirstNameError('Failed to sign up. Please try again later.');
     }
   };
 
@@ -93,12 +99,19 @@ const SignUp = () => {
         <Text style={styles.heading}>Sign Up</Text>
         <Text style={styles.subHeading}>Please sign up to get started</Text>
         <TextInput
-          style={[styles.input, nameError && styles.errorInput]}
-          placeholder="Name"
-          value={name}
-          onChangeText={setName}
+          style={[styles.input, firstNameError && styles.errorInput]}
+          placeholder="First Name"
+          value={firstName}
+          onChangeText={setFirstName}
         />
-        {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+        {firstNameError ? <Text style={styles.errorText}>{firstNameError}</Text> : null}
+        <TextInput
+          style={[styles.input, lastNameError && styles.errorInput]}
+          placeholder="Last Name"
+          value={lastName}
+          onChangeText={setLastName}
+        />
+        {lastNameError ? <Text style={styles.errorText}>{lastNameError}</Text> : null}
         <TextInput
           style={[styles.input, emailError && styles.errorInput]}
           placeholder="Email"
