@@ -7,6 +7,7 @@ import Driver from '../Screen/Driver';
 import DriverPortfolio from '../Screen/DriverPortfolio';
 import Forget from '../Screen/Forget';
 import Location from '../Screen/Location';
+import UserInfoScreen from '../Screen/UserInfoScreen';
 import Map from '../Screen/Map';
 import Message from '../Screen/Message';
 import MyProfile from '../Screen/MyProfile';
@@ -50,6 +51,7 @@ const TopUpNavigation = () => {
       <Stack.Screen name="driverproile" component={driverprofile} />
      
       <Stack.Screen name="seats" component={seats} />
+      <Stack.Screen name="UserInfo" component={UserInfoScreen} />
       <Stack.Screen name="Routeinfo" component={Routeinfo} />
       <Stack.Screen name="personalInfo" component={personalInfo} />
       <Stack.Screen name="feedback" component={feedback} options={{ title: 'Feedback' }} />
