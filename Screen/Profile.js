@@ -1,7 +1,7 @@
 import { FontAwesome } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { firebase } from '../firebase/firebaseConfig';
 
 const Account = () => {
@@ -47,15 +47,15 @@ const Account = () => {
 
   const checkDriverStatus = async (email) => {
     try {
-      const driverRef = firebase.database().ref('drivers'); // Adjusted reference to 'drivers'
+      const driverRef = firebase.database().ref('driverRef');
       const snapshot = await driverRef.once('value');
       const drivers = snapshot.val();
-      
+
       if (drivers) {
         const isDriver = Object.values(drivers).some(driver => driver.email === email);
-        
+
         if (isDriver) {
-          navigation.navigate('DriverHome', { screen: 'RideRequest' });
+          navigation.navigate('DriverHome', { screen: 'NotificationReceiverScreen' });
         } else {
           navigation.navigate('personalInfo');
         }
@@ -64,7 +64,7 @@ const Account = () => {
       }
     } catch (error) {
       console.error("Error checking driver status: ", error);
-      navigation.navigate('PersonalInfo');
+      navigation.navigate('personalInfo');
     }
   };
 
