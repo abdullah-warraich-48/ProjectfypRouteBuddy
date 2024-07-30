@@ -99,7 +99,7 @@ const PersonalInfo = () => {
       <View style={styles.iconRow}>
         <View style={styles.iconContainer}>
           <View style={styles.circle}>
-            <TouchableOpacity style={styles.locationButton} onPress={() => navigation.navigate('abd')}>
+            <TouchableOpacity style={styles.locationButton} onPress={() => navigation.navigate('PersonalInfo')}>
               <Icon name="user" size={30} color="#000" style={styles.icon} />
             </TouchableOpacity>
             <Text style={styles.text}>Personal</Text>
@@ -117,7 +117,7 @@ const PersonalInfo = () => {
         </View>
         <View style={styles.iconContainer}>
           <View style={styles.circle}>
-            <TouchableOpacity style={styles.locationButton} onPress={() => navigation.navigate('vehicleinfo')}>
+            <TouchableOpacity style={styles.locationButton} onPress={() => navigation.navigate('VehicleInfo')}>
               <Icon name="car" size={30} color="#000" style={styles.icon} />
             </TouchableOpacity>
             <Text style={styles.text}>Vehicle</Text>
@@ -135,7 +135,7 @@ const PersonalInfo = () => {
         </View>
         <View style={styles.iconContainer}>
           <View style={styles.circle}>
-            <TouchableOpacity style={styles.locationButton} onPress={() => navigation.navigate('Routeinfo')}>
+            <TouchableOpacity style={styles.locationButton} onPress={() => navigation.navigate('RouteInfo')}>
               <Icon name="road" size={30} color="#000" style={styles.icon} />
             </TouchableOpacity>
             <Text style={styles.text}>Route</Text>
@@ -228,7 +228,6 @@ const PersonalInfo = () => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

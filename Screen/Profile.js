@@ -111,7 +111,7 @@ const Account = () => {
         <TouchableOpacity style={styles.optionButton} onPress={() => checkDriverStatus(user?.email)}>
           <OptionItem icon="car" label="Become a Driver" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('PostComplaint')}>
+        <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('Complain  ')}>
           <OptionItem icon="exclamation-triangle" label="Post a Complaint" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('Booking')}>

@@ -1,10 +1,10 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import React, { useContext, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { UserContext } from '../context/UserContext';
-import { database, storage } from '../firebase/firebaseConfig';
+import { firebase, storage } from '../firebase/firebaseConfig'; // Adjust this import based on your project structure
 
 const Routeinfo = () => {
   const { currentUser } = useContext(UserContext);
@@ -37,27 +37,14 @@ const Routeinfo = () => {
   const [arrivalTimeError, setArrivalTimeError] = useState('');
   const [priceError, setPriceError] = useState('');
 
-  const [isDeparturePickerVisible, setDeparturePickerVisibility] = useState(false);
-  const [isArrivalPickerVisible, setArrivalPickerVisibility] = useState(false);
-
-  const handleDepartureConfirm = (date) => {
-    setDepartureTime(date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    setDeparturePickerVisibility(false);
-  };
-
-  const handleArrivalConfirm = (date) => {
-    setArrivalTime(date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    setArrivalPickerVisibility(false);
-  };
-
   const uploadImage = async (uri) => {
     try {
       setUploading(true);
       const response = await fetch(uri);
       const blob = await response.blob();
-      const storageRef = storage.ref().child(`images/${Date.now()}_${uri.split('/').pop()}`);
-      const snapshot = await storageRef.put(blob);
-      const downloadURL = await snapshot.ref.getDownloadURL();
+      const storageRef = ref(storage, `uploads/${Date.now()}`);
+      await uploadBytes(storageRef, blob);
+      const downloadURL = await getDownloadURL(storageRef);
       setUploading(false);
       return downloadURL;
     } catch (error) {
@@ -98,8 +85,8 @@ const Routeinfo = () => {
       setArrivalTimeError('');
     }
 
-    if (!price.trim() || isNaN(price)) {
-      setPriceError('Price is required and must be a number');
+    if (!price.trim()) {
+      setPriceError('Price is required');
       isValid = false;
     } else {
       setPriceError('');
@@ -107,32 +94,49 @@ const Routeinfo = () => {
 
     if (!isValid) return;
 
+    let vehicleImageURL = vehicleImageUri;
+    let licenseImageURL = licenseImageUri;
+
+    if (vehicleImageUri) {
+      try {
+        vehicleImageURL = await uploadImage(vehicleImageUri);
+      } catch (error) {
+        console.error('Error uploading vehicle image:', error.message);
+      }
+    }
+
+    if (licenseImageUri) {
+      try {
+        licenseImageURL = await uploadImage(licenseImageUri);
+      } catch (error) {
+        console.error('Error uploading license image:', error.message);
+      }
+    }
+
+    const routeInfo = {
+      email: currentUser.email,
+      firstName,
+      lastName,
+      phoneNumber,
+      address,
+      age,
+      vehicleType,
+      seats,
+      model,
+      startPoint,
+      destination,
+      departureTime,
+      arrivalTime,
+      price,
+      vehicleImageURL,
+      licenseImageURL,
+    };
+
     try {
-      const vehicleImageUrl = vehicleImageUri ? await uploadImage(vehicleImageUri) : '';
-      const licenseImageUrl = licenseImageUri ? await uploadImage(licenseImageUri) : '';
-
-      const routeInfo = {
-        email: currentUser.email,
-        firstName,
-        lastName,
-        phoneNumber,
-        address,
-        age,
-        vehicleType,
-        seats,
-        model,
-        startPoint,
-        destination,
-        departureTime,
-        arrivalTime,
-        price,
-        vehicleImageUrl,
-        licenseImageUrl,
-      };
-
-      await database.ref('driverRef').push(routeInfo);
+      const database = firebase.database();
+      const driverRef = await database.ref('driverRef').push(routeInfo);
       console.log('Route info saved successfully');
-      navigation.navigate('DriverHome', { screen: 'RideRequest' });
+      navigation.navigate('RideRequest');
     } catch (error) {
       console.error('Error saving route info:', error.message);
       console.error('Error details:', error);
@@ -143,7 +147,7 @@ const Routeinfo = () => {
     <View style={styles.container}>
       <View style={styles.iconRow}>
         <View style={styles.iconContainer}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('PersonalInfo')}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('personalInfo')}>
             <View style={styles.circle}>
               <Icon name="user" size={30} color="#fff" />
             </View>
@@ -151,7 +155,7 @@ const Routeinfo = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.iconContainer}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('VehicleInfo')}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('vehicleinfo')}>
             <View style={styles.circle}>
               <Icon name="car" size={30} color="#fff" />
             </View>
@@ -159,7 +163,7 @@ const Routeinfo = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.iconContainer}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Routeinfo')}>
+          <TouchableOpacity style={styles.iconButton}>
             <View style={styles.circle}>
               <Icon name="road" size={30} color="#fff" />
             </View>
@@ -193,40 +197,24 @@ const Routeinfo = () => {
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Departure Time</Text>
-          <TouchableOpacity onPress={() => setDeparturePickerVisibility(true)}>
-            <TextInput
-              style={[styles.input, departureTimeError ? styles.inputError : null]}
-              placeholder="Select departure time"
-              value={departureTime}
-              editable={false}
-            />
-          </TouchableOpacity>
-          {departureTimeError ? <Text style={styles.errorText}>{departureTimeError}</Text> : null}
-          <DateTimePickerModal
-            isVisible={isDeparturePickerVisible}
-            mode="time"
-            onConfirm={handleDepartureConfirm}
-            onCancel={() => setDeparturePickerVisibility(false)}
+          <TextInput
+            style={[styles.input, departureTimeError ? styles.inputError : null]}
+            placeholder="Enter departure time"
+            value={departureTime}
+            onChangeText={text => setDepartureTime(text)}
           />
+          {departureTimeError ? <Text style={styles.errorText}>{departureTimeError}</Text> : null}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Arrival Time</Text>
-          <TouchableOpacity onPress={() => setArrivalPickerVisibility(true)}>
-            <TextInput
-              style={[styles.input, arrivalTimeError ? styles.inputError : null]}
-              placeholder="Select arrival time"
-              value={arrivalTime}
-              editable={false}
-            />
-          </TouchableOpacity>
-          {arrivalTimeError ? <Text style={styles.errorText}>{arrivalTimeError}</Text> : null}
-          <DateTimePickerModal
-            isVisible={isArrivalPickerVisible}
-            mode="time"
-            onConfirm={handleArrivalConfirm}
-            onCancel={() => setArrivalPickerVisibility(false)}
+          <TextInput
+            style={[styles.input, arrivalTimeError ? styles.inputError : null]}
+            placeholder="Enter arrival time"
+            value={arrivalTime}
+            onChangeText={text => setArrivalTime(text)}
           />
+          {arrivalTimeError ? <Text style={styles.errorText}>{arrivalTimeError}</Text> : null}
         </View>
 
         <View style={styles.inputContainer}>
@@ -236,7 +224,6 @@ const Routeinfo = () => {
             placeholder="Enter price"
             value={price}
             onChangeText={text => setPrice(text)}
-            keyboardType="numeric"
           />
           {priceError ? <Text style={styles.errorText}>{priceError}</Text> : null}
         </View>
@@ -252,7 +239,6 @@ const Routeinfo = () => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -277,14 +263,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#32a4a8',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 5,
   },
   iconText: {
+    color: '#333',
     fontSize: 14,
-    fontWeight: '600',
   },
   form: {
-    paddingHorizontal: 20,
+    flexGrow: 1,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1, // Added border width
+    borderColor: '#ccc', // Added border color
   },
   inputContainer: {
     marginBottom: 20,
@@ -293,6 +289,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 5,
+    color: '#333',
   },
   input: {
     borderWidth: 1,
@@ -302,32 +299,37 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: '#f2f2f2',
   },
-  inputError: {
-    borderColor: '#ff0000',
-  },
-  errorText: {
-    color: '#ff0000',
-    fontSize: 12,
-    marginTop: 5,
-  },
   button: {
     backgroundColor: '#32a4a8',
     paddingVertical: 15,
     borderRadius: 5,
     alignItems: 'center',
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
   button1: {
     backgroundColor: '#32a4a8',
     paddingVertical: 15,
-    borderRadius: 5,
+    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 20,
+    width: 130,
+    height: 50,
+    marginBottom: 30,
+    marginTop: 5,
+    marginLeft:20,
+    alignSelf: 'flex-end',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  inputError: {
+    borderColor: 'red',
+  },
+  errorText: {
+    color: 'red',
+    marginTop: 5,
   },
 });
+
 
 export default Routeinfo;

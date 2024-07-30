@@ -4,21 +4,20 @@ import { StyleSheet, Text, View } from 'react-native';
 
 const Booking = () => {
   const route = useRoute();
-  const { driverData } = route.params || {};
-
+  const { filterDriverData } = route.params || {};
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Booking Details</Text>
-      {driverData ? (
+      {filterDriverData ? (
         <View style={styles.details}>
           <Text style={styles.label}>Arrival Time:</Text>
-          <Text>{driverData.arrivalTime}</Text>
+          <Text>{filterDriverData.arrivalTime}</Text>
           <Text style={styles.label}>Departure Time:</Text>
-          <Text>{driverData.departureTime}</Text>
+          <Text>{filterDriverData.departureTime}</Text>
           <Text style={styles.label}>Destination:</Text>
-          <Text>{driverData.destination}</Text>
+          <Text>{filterDriverData.destination}</Text>
           <Text style={styles.label}>Price:</Text>
-          <Text>{driverData.price}</Text>
+          <Text>{filterDriverData.price}</Text>
         </View>
       ) : (
         <Text>No driver data available.</Text>

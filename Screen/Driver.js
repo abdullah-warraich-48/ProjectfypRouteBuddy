@@ -12,10 +12,10 @@ const Driver = ({ route }) => {
   const [chatId, setChatId] = useState(null);
   const [chat, setChat] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const [profilePic, setProfilePic] = useState('');
+  const [vehiclePics, setVehiclePics] = useState([]);
   const currentUserEmail = currentUser?.email;
-  const { driverData } = route?.params || {};
-  //console.log(driverData)
+  const { driverData } = route?.params || {}; //console.log(driverData)
 
   useEffect(() => {
     const fetchChatId = async () => {
@@ -24,7 +24,6 @@ const Driver = ({ route }) => {
         onValue(chatsRef, (snapshot) => {
           const chatsData = snapshot.val();
           let existingChatId = null;
-
           for (const chatKey in chatsData) {
             const chat = chatsData[chatKey];
             if (chat.users.includes(currentUserEmail) && chat.users.includes(driverData?.email)) {
@@ -32,7 +31,6 @@ const Driver = ({ route }) => {
               break;
             }
           }
-
           if (existingChatId) {
             setChatId(existingChatId);
             setChat(chatsData[existingChatId]);
@@ -45,7 +43,6 @@ const Driver = ({ route }) => {
               setChatId(newChatRef.key); // Use newChatRef.key to set chatId
             });
           }
-
           setLoading(false);
         });
       } catch (error) {
@@ -54,11 +51,26 @@ const Driver = ({ route }) => {
       }
     };
 
+    const fetchDriverData = async () => {
+      try {
+        const driverRef = ref(firebase.database(), `driverRef/${driverData?.id}`);
+        onValue(driverRef, (snapshot) => {
+          const driver = snapshot.val();
+          if (driver) {
+            setProfilePic(driver.profilePic || ''); // Fetch profile picture URL
+            setVehiclePics(driver.vehiclePics || []); // Fetch vehicle pictures
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching driver data:', error.message);
+      }
+    };
+
     if (currentUser && driverData) {
       fetchChatId();
+      fetchDriverData();
     }
   }, [currentUserEmail, driverData?.email, currentUser, driverData]);
-  
 
   if (!driverData) {
     return (
@@ -74,21 +86,16 @@ const Driver = ({ route }) => {
         Alert.alert('Error', 'Driver or user data is missing.');
         return;
       }
-
       const notificationsRef = ref(firebase.database(), 'notifications');
       const newNotificationRef = push(notificationsRef);
-
       const notificationData = {
         title: 'New Request',
         message: `You have received a new request from ${currentUser.email || 'unknown'} for driver ${driverData.firstName || 'unknown'}.`,
         timestamp: Date.now(),
         users: [currentUser.email, driverData.email],
       };
-
       console.log("Notification Data:", notificationData);
-
       await set(newNotificationRef, notificationData);
-
       Alert.alert('Request Sent', `Your request has been sent to ${driverData.firstName}.`, [
         { text: 'OK', onPress: () => navigation.navigate('NotificationScreen') }
       ]);
@@ -101,27 +108,26 @@ const Driver = ({ route }) => {
   return (
     <View style={styles.container}>
       <View style={styles.profileContainer}>
-        <Image source={driverData?.profilePic} style={styles.profilePicture} />
+        <Image source={{ uri: profilePic }} style={styles.profilePicture} />
         <Text style={styles.name}>{driverData?.firstName + " " + driverData?.lastName}</Text>
         <Text style={styles.number}>{driverData?.number}</Text>
       </View>
-
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('chat', {
-          chatId: chatId,
-          driverId: driverData?.id,
-          chatData: chat
-        })}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate('chat', { chatId: chatId, driverId: driverData?.id, chatData: chat })}
+        >
           <Text style={styles.buttonText}>Message</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.button} onPress={handleRequest}>
           <Text style={styles.buttonText}>Request</Text>
         </TouchableOpacity>
       </View>
-
       <View style={styles.optionsContainer}>
-        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('feedback', { receiverId: driverData.email })}>
-         
+        <TouchableOpacity
+          style={styles.option}
+          onPress={() => navigation.navigate('feedback', { receiverId: driverData.email })}
+        >
           <FontAwesome name="star" size={24} color="black" />
           <Text style={styles.optionLabel}>Rate</Text>
         </TouchableOpacity>
@@ -134,11 +140,15 @@ const Driver = ({ route }) => {
           <Text style={styles.optionLabel}>Location</Text>
         </TouchableOpacity>
       </View>
-
       <Text style={styles.sectionTitle}>Vehicle</Text>
       <View style={styles.vehicleContainer}>
-        {Array.isArray(driverData.vehiclePics) && driverData.vehiclePics.map((vehiclePic, index) => (
-          <Image key={index} style={styles.vehiclePicture} source={vehiclePic} />
+        {vehiclePics.slice(0, 2).map((vehiclePic, index) => (
+          <Image key={index} style={styles.vehiclePicture} source={{ uri: vehiclePic }} />
+        ))}
+      </View>
+      <View style={styles.vehicleContainer}>
+        {vehiclePics.slice(2, 4).map((vehiclePic, index) => (
+          <Image key={index} style={styles.vehiclePicture} source={{ uri: vehiclePic }} />
         ))}
       </View>
     </View>
@@ -211,13 +221,13 @@ const styles = StyleSheet.create({
   },
   vehicleContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
   vehiclePicture: {
-    width: 120,
+    width: '48%',
     height: 120,
     borderRadius: 10,
-    marginBottom: 10,
   },
   errorText: {
     fontSize: 18,

@@ -15,14 +15,12 @@ const Notifications = () => {
   // Fetch all driver data
   const fetchAllDrivers = async () => {
     try {
-      const driversRef = ref(firebase.database(), 'driverRef'); 
+      const driversRef = ref(firebase.database(), 'driverRef');
       const snapshot = await get(driversRef);
 
       if (snapshot.exists()) {
         const driversData = snapshot.val();
         setDrivers(driversData);
-        
-        //console.log(driversData);
       } else {
         console.log('No drivers data available');
       }
@@ -57,7 +55,6 @@ const Notifications = () => {
             if (notification.users.includes(currentUserEmail)) {
               // Assume driver is always in the users array at index 1
               const driverId = notification.users[1];
-              
 
               userNotifications.push({
                 notificationId: notificationKey,
@@ -103,23 +100,29 @@ const Notifications = () => {
                 if (notification && Array.isArray(notification.users)) {
                   // Check if the current user is in the notification's users list
                   if (notification.users.includes(currentUser.email)) {
-                    console.log(currentUser.email);
+                    const driverId = currentUser.email;
+                    console.log(driverId);
                     // Fetch driver data based on driverId
-                    const driverId = notification.users[1]; // Index 1 represents the driver
-                    const encodedDriverId = encodeURIComponent(driverId); // Encode driver ID
-                    const driverRef = ref(firebase.database(), `drivers/${encodedDriverId}`);
+                    const driverRef = ref(firebase.database(), `driverRef/`);
                     const driverSnapshot = await get(driverRef);
-                    
-                    
+
                     if (driverSnapshot.exists()) {
                       const driverData = driverSnapshot.val();
-                      // console.log(driverData);
+                      console.log('Driver Data:', driverData);
 
-                      // Update the notification status to 'accepted' and add the receiverId
+                      const filterDriverData = Object.values(driverData).find(driver => driver.email === driverId);
+                      console.log(filterDriverData);
+
+                      // Update notification status to 'accepted' and add receiverId
                       await update(notificationRef, { status: 'accepted', receiverId: currentUser.uid });
                       console.log(`Accepted notification with ID: ${notificationId}`);
 
-                      // Create a new notification for the sender
+                      // Post the filterDriverData to the booking collection
+                      const bookingRef = ref(firebase.database(), 'booking');
+                      await push(bookingRef, filterDriverData);
+                      console.log('Posted driver data to the booking collection.');
+
+                      // Send notification to the sender about acceptance
                       const senderNotificationRef = ref(firebase.database(), 'notifications');
                       const newNotification = {
                         senderEmail: currentUser.email,
@@ -129,18 +132,8 @@ const Notifications = () => {
                       };
                       await push(senderNotificationRef, newNotification);
                       console.log('Notification sent to the sender about acceptance.');
-
-                      // Navigate to booking screen and pass driver data
-                      navigation.navigate('Booking', {
-                        driverData: {
-                          arrivalTime: driverData.arrivalTime,
-                          departureTime: driverData.departureTime,
-                          destination: driverData.destination,
-                          price: driverData.price,
-                        }
-                      });
                     } else {
-                      console.error(`Driver data does not exist for driverId: ${encodedDriverId}`);
+                      console.error(`Driver data does not exist for driverId: ${driverId}`);
                     }
                   } else {
                     console.error('Current user is not in the notification users list.');
