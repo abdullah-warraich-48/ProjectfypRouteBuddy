@@ -1,7 +1,8 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import React, { useContext, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { UserContext } from '../context/UserContext';
 import { firebase, storage } from '../firebase/firebaseConfig'; // Adjust this import based on your project structure
@@ -26,8 +27,8 @@ const Routeinfo = () => {
 
   const [startPoint, setStartPoint] = useState('');
   const [destination, setDestination] = useState('');
-  const [departureTime, setDepartureTime] = useState('');
-  const [arrivalTime, setArrivalTime] = useState('');
+  const [departureTime, setDepartureTime] = useState(new Date());
+  const [arrivalTime, setArrivalTime] = useState(new Date());
   const [price, setPrice] = useState('');
   const [uploading, setUploading] = useState(false);
 
@@ -36,6 +37,9 @@ const Routeinfo = () => {
   const [departureTimeError, setDepartureTimeError] = useState('');
   const [arrivalTimeError, setArrivalTimeError] = useState('');
   const [priceError, setPriceError] = useState('');
+
+  const [showDeparturePicker, setShowDeparturePicker] = useState(false);
+  const [showArrivalPicker, setShowArrivalPicker] = useState(false);
 
   const uploadImage = async (uri) => {
     try {
@@ -71,14 +75,14 @@ const Routeinfo = () => {
       setDestinationError('');
     }
 
-    if (!departureTime.trim()) {
+    if (!departureTime) {
       setDepartureTimeError('Departure time is required');
       isValid = false;
     } else {
       setDepartureTimeError('');
     }
 
-    if (!arrivalTime.trim()) {
+    if (!arrivalTime) {
       setArrivalTimeError('Arrival time is required');
       isValid = false;
     } else {
@@ -125,12 +129,14 @@ const Routeinfo = () => {
       model,
       startPoint,
       destination,
-      departureTime,
-      arrivalTime,
+      departureTime: departureTime.toISOString(),
+      arrivalTime: arrivalTime.toISOString(),
       price,
       vehicleImageURL,
       licenseImageURL,
     };
+
+    log
 
     try {
       const database = firebase.database();
@@ -141,6 +147,18 @@ const Routeinfo = () => {
       console.error('Error saving route info:', error.message);
       console.error('Error details:', error);
     }
+  };
+
+  const handleDepartureTimeChange = (selectedTime) => {
+    const currentTime = selectedTime || departureTime;
+    setShowDeparturePicker(Platform.OS === 'ios');
+    setDepartureTime(currentTime);
+  };
+
+  const handleArrivalTimeChange = (selectedTime) => {
+    const currentTime = selectedTime || arrivalTime;
+    setShowArrivalPicker(Platform.OS === 'ios');
+    setArrivalTime(currentTime);
   };
 
   return (
@@ -197,23 +215,39 @@ const Routeinfo = () => {
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Departure Time</Text>
-          <TextInput
+          <TouchableOpacity
             style={[styles.input, departureTimeError ? styles.inputError : null]}
-            placeholder="Enter departure time"
-            value={departureTime}
-            onChangeText={text => setDepartureTime(text)}
-          />
+            onPress={() => setShowDeparturePicker(true)}
+          >
+            <Text>{departureTime.toLocaleTimeString()}</Text>
+          </TouchableOpacity>
+          {showDeparturePicker && (
+            <DateTimePicker
+              value={departureTime}
+              mode="time"
+              display="default"
+              onChange={handleDepartureTimeChange}
+            />
+          )}
           {departureTimeError ? <Text style={styles.errorText}>{departureTimeError}</Text> : null}
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Arrival Time</Text>
-          <TextInput
+          <TouchableOpacity
             style={[styles.input, arrivalTimeError ? styles.inputError : null]}
-            placeholder="Enter arrival time"
-            value={arrivalTime}
-            onChangeText={text => setArrivalTime(text)}
-          />
+            onPress={() => setShowArrivalPicker(true)}
+          >
+            <Text>{arrivalTime.toLocaleTimeString()}</Text>
+          </TouchableOpacity>
+          {showArrivalPicker && (
+            <DateTimePicker
+              value={arrivalTime}
+              mode="time"
+              display="default"
+              onChange={handleArrivalTimeChange}
+            />
+          )}
           {arrivalTimeError ? <Text style={styles.errorText}>{arrivalTimeError}</Text> : null}
         </View>
 
@@ -231,14 +265,18 @@ const Routeinfo = () => {
         <TouchableOpacity style={styles.button} onPress={handleSaveData} disabled={uploading}>
           <Text style={styles.buttonText}>{uploading ? 'Saving...' : 'Save'}</Text>
         </TouchableOpacity>
-      </ScrollView>
 
-      <TouchableOpacity style={styles.button1} onPress={() => navigation.navigate('DriverPortfolio')}>
-        <Text style={styles.buttonText}>Add Route</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button1}
+          onPress={() => navigation.navigate('DriverPortfolio')}
+        >
+          <Text style={styles.buttonText}>Add Route</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -314,7 +352,7 @@ const styles = StyleSheet.create({
     height: 50,
     marginBottom: 30,
     marginTop: 5,
-    marginLeft:20,
+    marginLeft: 20,
     alignSelf: 'flex-end',
   },
   buttonText: {
@@ -330,6 +368,5 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 });
-
 
 export default Routeinfo;

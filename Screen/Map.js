@@ -44,6 +44,8 @@ const Map = () => {
           time: value.time,
           subOperator: value.subOperator || 'N/A',
           licenseImageUrl: value.licenseImageUrl || "https://firebasestorage.googleapis.com/v0/b/route-budy-a5648.appspot.com/o/vehicles%2F1720670511070?alt=media&token=32977150-e705-4aeb-99e6-d1a89cf67b4b",
+          arrivalTime: value.arrivalTime,
+          destinationTime: value.destinationTime
         }));
 
         const filteredData = formattedData.filter(driver => driver.email !== currentUser.email);
@@ -89,8 +91,11 @@ const Map = () => {
         (selectedPrice === '10000-20000' && parseFloat(driver.price) >= 10000 && parseFloat(driver.price) <= 20000) ||
         (selectedPrice === '>20000' && parseFloat(driver.price) > 20000);
 
-      const matchesTimeRange = !startTime || !endTime ||
-        (driver.time && driver.time >= startTime && driver.time <= endTime);
+      const matchesTimeRange = (!startTime || !endTime) || (
+        driver.arrivalTime && driver.departureTime &&
+        new Date(`1970-01-01T${driver.arrivalTime}:00`).getTime() >= new Date(`1970-01-01T${startTime}:00`).getTime() &&
+        new Date(`1970-01-01T${driver.departureTime}:00`).getTime() <= new Date(`1970-01-01T${endTime}:00`).getTime()
+      );
 
       return matchesTime && matchesVehicle && matchesPrice && matchesTimeRange;
     });
@@ -147,16 +152,6 @@ const Map = () => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalHeader}>Select Filters</Text>
-{/* 
-            <Picker
-              selectedValue={selectedTime}
-              style={styles.dropdown}
-              onValueChange={(itemValue) => setSelectedTime(itemValue)}
-            >
-              {availableTimes.map((time, index) => (
-                <Picker.Item key={index} label={time} value={time} />
-              ))}
-            </Picker> */}
 
             <Picker
               selectedValue={selectedVehicle}

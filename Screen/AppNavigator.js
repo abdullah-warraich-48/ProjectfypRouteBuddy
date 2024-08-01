@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { FormProvider } from './FormContext';
-import PersonalInfo from './screens/PersonalInfo';
-import VehicleInfo from './screens/VehicleInfo';
-import RouteInfo from './screens/RouteInfo';
+import React, { useEffect } from 'react';
 import { UserProvider } from '../context/UserContext';
 import DrawerNavigation from './DrawerNavigation'; // Import your DrawerNavigation component
+import { FormProvider } from './FormContext';
+import PersonalInfo from './screens/PersonalInfo';
+import RouteInfo from './screens/RouteInfo';
+import VehicleInfo from './screens/VehicleInfo';
 
 const Stack = createStackNavigator();
 

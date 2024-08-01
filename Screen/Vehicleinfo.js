@@ -17,9 +17,9 @@ const VehicleInfo = () => {
   const [color, setColor] = useState('Red');
   const [uploading, setUploading] = useState(false);
   const [dropdownData, setDropdownData] = useState({
-    vehicles: ['Car', 'Van', 'Truck'],
-    models: ['2019', '2020', '2021'],
-    seats: ['1', '2', '3'],
+    vehicles: ['Car', 'Van', 'CarryBox', 'Rikshaw', 'Bike '],
+    models: ['2019', '2020', '2021', '2022', '2023', '2024'],
+    seats: ['1', '2', '3','4','5','6'],
     colors: ['Red', 'Blue', 'Green'],
   });
 
@@ -102,6 +102,7 @@ const VehicleInfo = () => {
       Alert.alert('Upload Failed', 'There was an issue uploading the images. Please try again.');
       return;
     }
+    console.log(vehicleImageUrls);
 
     navigation.navigate('Routeinfo', {
       ...route.params,
@@ -250,66 +251,74 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  icon: {
-    textAlign: 'center',
-    lineHeight: 90,
-  },
   text: {
-    paddingTop: 19,
+    marginTop: 8,
+    textAlign: 'center',
+    fontWeight: 'bold',
+    color: '#000',
   },
   scrollContainer: {
     flex: 1,
+    marginTop: 10,
   },
   borderform: {
-    flex: 1,
-    borderWidth: 1,
-    marginTop: 20,
-    paddingHorizontal: 25,
-    paddingTop: 20,
-    borderColor: '#ddd',
-    borderRadius: 5,
+    padding: 10,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#ccc',
+    marginBottom: 10,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 15,
   },
   label: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   picker: {
-    height: 50,
-    width: '100%',
-    backgroundColor: '#f5f5f5',
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
   },
   imageContainer: {
+    alignItems: 'center',
     marginBottom: 20,
   },
   imageSelectedText: {
     marginTop: 10,
-    marginBottom: 5,
+    fontSize: 16,
+    color: 'green',
   },
   imagePreview: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: 10,
   },
   selectedImage: {
-    width: 100,
-    height: 100,
-    marginRight: 10,
-    marginBottom: 10,
-    borderRadius: 5,
+    width: 80,
+    height: 80,
+    margin: 5,
   },
   button: {
     backgroundColor: '#32a4a8',
-    padding: 15,
+    padding: 10,
     borderRadius: 5,
     alignItems: 'center',
   },
   buttonText: {
     color: '#fff',
     fontSize: 18,
-    fontWeight: 'bold',
+  },
+  locationButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  icon: {
+    width: 30,
+    height: 30,
   },
 });
 

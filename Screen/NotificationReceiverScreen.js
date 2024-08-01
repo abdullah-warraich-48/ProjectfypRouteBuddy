@@ -98,29 +98,23 @@ const Notifications = () => {
               if (snapshot.exists()) {
                 const notification = snapshot.val();
                 if (notification && Array.isArray(notification.users)) {
-                  // Check if the current user is in the notification's users list
                   if (notification.users.includes(currentUser.email)) {
                     const driverId = currentUser.email;
-                    console.log(driverId);
+
                     // Fetch driver data based on driverId
                     const driverRef = ref(firebase.database(), `driverRef/`);
                     const driverSnapshot = await get(driverRef);
 
                     if (driverSnapshot.exists()) {
                       const driverData = driverSnapshot.val();
-                      console.log('Driver Data:', driverData);
-
                       const filterDriverData = Object.values(driverData).find(driver => driver.email === driverId);
-                      console.log(filterDriverData);
 
                       // Update notification status to 'accepted' and add receiverId
                       await update(notificationRef, { status: 'accepted', receiverId: currentUser.uid });
-                      console.log(`Accepted notification with ID: ${notificationId}`);
 
                       // Post the filterDriverData to the booking collection
                       const bookingRef = ref(firebase.database(), 'booking');
                       await push(bookingRef, filterDriverData);
-                      console.log('Posted driver data to the booking collection.');
 
                       // Send notification to the sender about acceptance
                       const senderNotificationRef = ref(firebase.database(), 'notifications');
@@ -131,7 +125,15 @@ const Notifications = () => {
                         status: 'pending',
                       };
                       await push(senderNotificationRef, newNotification);
-                      console.log('Notification sent to the sender about acceptance.');
+
+                      // Navigate to Booking screen with additional parameters
+                      navigation.navigate('booking', {
+                        arrivalTime: filterDriverData.arrivalTime,
+                        departureTime: filterDriverData.departureTime,
+                        price: filterDriverData.price,
+                      });
+                      console.log(filterDriverData.arrivalTime);
+
                     } else {
                       console.error(`Driver data does not exist for driverId: ${driverId}`);
                     }
@@ -163,7 +165,6 @@ const Notifications = () => {
       if (snapshot.exists()) {
         const notification = snapshot.val();
         if (notification && Array.isArray(notification.users)) {
-          // Check if the current user is in the notification's users list
           if (notification.users.includes(currentUser.email)) {
             // Update the notification status to 'declined'
             await update(notificationRef, { status: 'declined' });
