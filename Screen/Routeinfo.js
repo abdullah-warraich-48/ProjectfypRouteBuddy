@@ -1,7 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { UserContext } from '../context/UserContext';
@@ -136,8 +136,6 @@ const Routeinfo = () => {
       licenseImageURL,
     };
 
-    log
-
     try {
       const database = firebase.database();
       const driverRef = await database.ref('driverRef').push(routeInfo);
@@ -149,17 +147,22 @@ const Routeinfo = () => {
     }
   };
 
-  const handleDepartureTimeChange = (selectedTime) => {
+  const handleDepartureTimeChange = (event, selectedTime) => {
     const currentTime = selectedTime || departureTime;
     setShowDeparturePicker(Platform.OS === 'ios');
     setDepartureTime(currentTime);
   };
 
-  const handleArrivalTimeChange = (selectedTime) => {
+  const handleArrivalTimeChange = (event, selectedTime) => {
     const currentTime = selectedTime || arrivalTime;
     setShowArrivalPicker(Platform.OS === 'ios');
     setArrivalTime(currentTime);
   };
+
+  useEffect(() => {
+    if (!departureTime) setDepartureTime(new Date());
+    if (!arrivalTime) setArrivalTime(new Date());
+  }, [departureTime, arrivalTime]);
 
   return (
     <View style={styles.container}>
@@ -219,7 +222,7 @@ const Routeinfo = () => {
             style={[styles.input, departureTimeError ? styles.inputError : null]}
             onPress={() => setShowDeparturePicker(true)}
           >
-            <Text>{departureTime.toLocaleTimeString()}</Text>
+            <Text>{departureTime ? departureTime.toLocaleTimeString() : 'Select Time'}</Text>
           </TouchableOpacity>
           {showDeparturePicker && (
             <DateTimePicker
@@ -238,7 +241,7 @@ const Routeinfo = () => {
             style={[styles.input, arrivalTimeError ? styles.inputError : null]}
             onPress={() => setShowArrivalPicker(true)}
           >
-            <Text>{arrivalTime.toLocaleTimeString()}</Text>
+            <Text>{arrivalTime ? arrivalTime.toLocaleTimeString() : 'Select Time'}</Text>
           </TouchableOpacity>
           {showArrivalPicker && (
             <DateTimePicker
@@ -262,15 +265,8 @@ const Routeinfo = () => {
           {priceError ? <Text style={styles.errorText}>{priceError}</Text> : null}
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleSaveData} disabled={uploading}>
-          <Text style={styles.buttonText}>{uploading ? 'Saving...' : 'Save'}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button1}
-          onPress={() => navigation.navigate('DriverPortfolio')}
-        >
-          <Text style={styles.buttonText}>Add Route</Text>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveData}>
+          <Text style={styles.saveButtonText}>Save</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -280,13 +276,12 @@ const Routeinfo = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    padding: 16,
   },
   iconRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'space-around',
+    marginBottom: 16,
   },
   iconContainer: {
     alignItems: 'center',
@@ -298,74 +293,46 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#32a4a8',
+    backgroundColor: '#007bff',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 8,
   },
   iconText: {
-    color: '#333',
-    fontSize: 14,
+    fontSize: 12,
   },
   form: {
-    flexGrow: 1,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
-    borderWidth: 1, // Added border width
-    borderColor: '#ccc', // Added border color
+    paddingBottom: 16,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 5,
-    color: '#333',
+    marginBottom: 4,
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    backgroundColor: '#f2f2f2',
-  },
-  button: {
-    backgroundColor: '#32a4a8',
-    paddingVertical: 15,
-    borderRadius: 5,
-    alignItems: 'center',
-  },
-  button1: {
-    backgroundColor: '#32a4a8',
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    width: 130,
-    height: 50,
-    marginBottom: 30,
-    marginTop: 5,
-    marginLeft: 20,
-    alignSelf: 'flex-end',
-  },
-  buttonText: {
-    color: '#fff',
+    borderRadius: 4,
+    padding: 8,
     fontSize: 16,
-    fontWeight: 'bold',
   },
   inputError: {
     borderColor: 'red',
   },
   errorText: {
     color: 'red',
-    marginTop: 5,
+    marginTop: 4,
+  },
+  saveButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 12,
+    borderRadius: 4,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
   },
 });
 
