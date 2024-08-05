@@ -17,9 +17,9 @@ const VehicleInfo = () => {
   const [color, setColor] = useState('Red');
   const [uploading, setUploading] = useState(false);
   const [dropdownData, setDropdownData] = useState({
-    vehicles: ['Car', 'Van', 'CarryBox', 'Rikshaw', 'Bike '],
+    vehicles: ['Car', 'Van', 'CarryBox', 'Rikshaw', 'Bike'],
     models: ['2019', '2020', '2021', '2022', '2023', '2024'],
-    seats: ['1', '2', '3','4','5','6'],
+    seats: ['1', '2', '3', '4', '5', '6'],
     colors: ['Red', 'Blue', 'Green'],
   });
 
@@ -95,6 +95,7 @@ const VehicleInfo = () => {
     }
 
     let vehicleImageUrls = [];
+   
     try {
       vehicleImageUrls = await uploadImages(images.map(image => image.uri));
     } catch (error) {
@@ -102,7 +103,7 @@ const VehicleInfo = () => {
       Alert.alert('Upload Failed', 'There was an issue uploading the images. Please try again.');
       return;
     }
-    console.log(vehicleImageUrls);
+   // console.log(vehicleImageUrls);
 
     navigation.navigate('Routeinfo', {
       ...route.params,
@@ -112,6 +113,7 @@ const VehicleInfo = () => {
       seats,
       color,
     });
+    console.log(vehicleImageUrls);
   };
 
   return (
@@ -264,61 +266,53 @@ const styles = StyleSheet.create({
   borderform: {
     padding: 10,
     backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#ccc',
-    marginBottom: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
   inputGroup: {
     marginBottom: 15,
   },
   label: {
     fontSize: 16,
+    fontWeight: 'bold',
     marginBottom: 5,
   },
   picker: {
-    height: 40,
+    height: 50,
+    width: '100%',
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
   },
   imageContainer: {
+    marginTop: 10,
     alignItems: 'center',
-    marginBottom: 20,
   },
   imageSelectedText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: 'green',
+    marginTop: 5,
+    color: 'blue',
   },
   imagePreview: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
     marginTop: 10,
   },
   selectedImage: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     margin: 5,
   },
   button: {
     backgroundColor: '#32a4a8',
-    padding: 10,
+    padding: 15,
     borderRadius: 5,
     alignItems: 'center',
   },
   buttonText: {
     color: '#fff',
-    fontSize: 18,
-  },
-  locationButton: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  icon: {
-    width: 30,
-    height: 30,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
