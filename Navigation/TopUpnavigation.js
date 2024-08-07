@@ -7,7 +7,6 @@ import Driver from '../Screen/Driver';
 import DriverPortfolio from '../Screen/DriverPortfolio';
 import Forget from '../Screen/Forget';
 import Location from '../Screen/Location';
-import UserInfoScreen from '../Screen/UserInfoScreen';
 import Map from '../Screen/Map';
 import Message from '../Screen/Message';
 import MyProfile from '../Screen/MyProfile';
@@ -15,6 +14,7 @@ import personalInfo from '../Screen/PersonalInfo';
 import Repass from '../Screen/Repass';
 import Routeinfo from '../Screen/Routeinfo';
 import SignIn from '../Screen/SignIn';
+import UserInfoScreen from '../Screen/UserInfoScreen';
 
 import SignUp from '../Screen/SignUp';
 import vehicleinfo from '../Screen/Vehicleinfo';
@@ -22,6 +22,7 @@ import booking from '../Screen/booking';
 import chat from '../Screen/chat';
 import codesn from '../Screen/codesn';
 import driveLoc from '../Screen/driveLoc';
+import driverLocation from '../Screen/driverLocation';
 import driverprofile from '../Screen/driverprofile';
 import feedback from '../Screen/feedback';
 import myPassenger from '../Screen/myPassenger';
@@ -55,6 +56,7 @@ const TopUpNavigation = () => {
       <Stack.Screen name="Routeinfo" component={Routeinfo} />
       <Stack.Screen name="personalInfo" component={personalInfo} />
       <Stack.Screen name="feedback" component={feedback} options={{ title: 'Feedback' }} />
+      <Stack.Screen name="driverLocation" component={driverLocation} options={{ title: 'driverLocation' }} />
       
       <Stack.Screen name="Repass" component={Repass} options={{ headerShown: false }} />
       <Stack.Screen name="codesn" component={codesn} options={{ headerShown: false }} />

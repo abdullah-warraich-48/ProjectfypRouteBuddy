@@ -1,3 +1,4 @@
+import { useNavigation } from '@react-navigation/native'; // Import navigation hook
 import axios from 'axios';
 import * as Location from 'expo-location';
 import React, { useEffect, useRef, useState } from 'react';
@@ -27,6 +28,7 @@ export default function App() {
   const [useCurrentLocation, setUseCurrentLocation] = useState(true); // State to manage location usage
   const mapRef = useRef(null);
   const watchId = useRef(null);
+  const navigation = useNavigation(); // Use the navigation hook
 
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -224,6 +226,10 @@ export default function App() {
     setDuration(null);
   };
 
+  const handleFindDriver = () => {
+    navigation.navigate('Map'); // Navigate to the Map screen
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.inputsContainer}>
@@ -260,33 +266,30 @@ export default function App() {
         style={styles.map}
         region={mapRegion} // Set the map region based on user's location
         mapType='standard'
-        onPress={handleMapPress}
+        showsUserLocation={true}
+        followsUserLocation={true}
+        showsMyLocationButton={true}
+        onPress={handleMapPress} // Add onPress handler
       >
         {startCoords && (
-          <Marker coordinate={startCoords} title="Start Location" />
+          <Marker coordinate={startCoords} title="Starting Location" pinColor="blue" />
         )}
         {endCoords && (
-          <Marker coordinate={endCoords} title="Destination Location" />
-        )}
-        {liveLocation && (
-          <Marker coordinate={liveLocation} title="Live Location" pinColor="blue" />
+          <Marker coordinate={endCoords} title="Destination Location" pinColor="red" />
         )}
         {routeCoords.length > 0 && (
-          <Polyline
-            coordinates={routeCoords}
-            strokeColor="#FF0000"
-            strokeWidth={3}
-          />
+          <Polyline coordinates={routeCoords} strokeWidth={4} strokeColor="blue" />
         )}
       </MapView>
-      <View style={styles.routeInfoContainer}>
-        {distance && duration && (
-          <>
-            <Text style={styles.routeInfoText}>Distance: {distance} km</Text>
-            <Text style={styles.routeInfoText}>Duration: {duration} hrs</Text>
-          </>
-        )}
-      </View>
+      {distance && duration && (
+        <View style={styles.routeInfo}>
+          <Text>Distance: {distance} km</Text>
+          <Text>Duration: {duration} hrs</Text>
+        </View>
+      )}
+      {routeCoords.length > 0 && (
+        <Button title="Find Driver" onPress={handleFindDriver} /> // Conditional "Find Driver" button
+      )}
       <StatusBar style="auto" />
     </View>
   );
@@ -295,11 +298,9 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   inputsContainer: {
     padding: 10,
-    backgroundColor: '#f0f0f0',
   },
   input: {
     height: 40,
@@ -311,21 +312,16 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
-  routeInfoContainer: {
-    padding: 10,
-    backgroundColor: '#f0f0f0',
-  },
-  routeInfoText: {
-    fontSize: 16,
-  },
   switchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
   },
   switchLabel: {
-    fontSize: 16,
     marginRight: 10,
   },
+  routeInfo: {
+    padding: 10,
+    backgroundColor: 'white',
+  },
 });
-

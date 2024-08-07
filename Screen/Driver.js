@@ -135,7 +135,7 @@ const Driver = ({ route }) => {
           <FontAwesome name="calendar" size={24} color="black" />
           <Text style={styles.optionLabel}>Availability</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('Location')}>
+        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('driverLocation')}>
           <FontAwesome name="map-marker" size={24} color="black" />
           <Text style={styles.optionLabel}>Location</Text>
         </TouchableOpacity>

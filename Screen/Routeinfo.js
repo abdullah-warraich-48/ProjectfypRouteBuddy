@@ -2,7 +2,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import React, { useContext, useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { UserContext } from '../context/UserContext';
 import { firebase, storage } from '../firebase/firebaseConfig'; // Adjust this import based on your project structure
@@ -40,6 +41,9 @@ const Routeinfo = () => {
 
   const [showDeparturePicker, setShowDeparturePicker] = useState(false);
   const [showArrivalPicker, setShowArrivalPicker] = useState(false);
+
+  const [mapVisible, setMapVisible] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   const uploadImage = async (uri) => {
     try {
@@ -164,6 +168,22 @@ const Routeinfo = () => {
     if (!arrivalTime) setArrivalTime(new Date());
   }, [departureTime, arrivalTime]);
 
+  const handleSelectLocation = () => {
+    setMapVisible(true);
+  };
+
+  const handleMapPress = (event) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setSelectedLocation({ latitude, longitude });
+  };
+
+  const handleConfirmLocation = () => {
+    if (selectedLocation) {
+      setStartPoint(`Lat: ${selectedLocation.latitude}, Lon: ${selectedLocation.longitude}`);
+    }
+    setMapVisible(false);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.iconRow}>
@@ -196,12 +216,14 @@ const Routeinfo = () => {
       <ScrollView contentContainerStyle={styles.form}>
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Starting Point</Text>
-          <TextInput
-            style={[styles.input, startPointError ? styles.inputError : null]}
-            placeholder="Enter starting point"
-            value={startPoint}
-            onChangeText={text => setStartPoint(text)}
-          />
+          <TouchableOpacity onPress={handleSelectLocation}>
+            <TextInput
+              style={[styles.input, startPointError ? styles.inputError : null]}
+              placeholder="Select starting point"
+              value={startPoint}
+              editable={false}
+            />
+          </TouchableOpacity>
           {startPointError ? <Text style={styles.errorText}>{startPointError}</Text> : null}
         </View>
 
@@ -255,12 +277,13 @@ const Routeinfo = () => {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Price (in PKR)</Text>
+          <Text style={styles.label}>Price</Text>
           <TextInput
             style={[styles.input, priceError ? styles.inputError : null]}
             placeholder="Enter price"
             value={price}
             onChangeText={text => setPrice(text)}
+            keyboardType="numeric"
           />
           {priceError ? <Text style={styles.errorText}>{priceError}</Text> : null}
         </View>
@@ -269,9 +292,38 @@ const Routeinfo = () => {
           <Text style={styles.saveButtonText}>Save</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <Modal visible={mapVisible} animationType="slide">
+        <View style={styles.mapContainer}>
+          <MapView
+            style={styles.map}
+            initialRegion={{
+              latitude: 31.4504,
+              longitude: 73.135,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+            onPress={handleMapPress}
+          >
+            {selectedLocation && (
+              <Marker coordinate={selectedLocation} />
+            )}
+          </MapView>
+          <View style={styles.mapButtonsContainer}>
+            <TouchableOpacity style={styles.mapButton} onPress={() => setMapVisible(false)}>
+              <Text style={styles.mapButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.mapButton} onPress={handleConfirmLocation}>
+              <Text style={styles.mapButtonText}>Confirm</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   container: {

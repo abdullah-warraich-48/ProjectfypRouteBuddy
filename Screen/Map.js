@@ -45,7 +45,9 @@ const Map = () => {
           subOperator: value.subOperator || 'N/A',
           licenseImageUrl: value.licenseImageUrl || "https://firebasestorage.googleapis.com/v0/b/route-budy-a5648.appspot.com/o/vehicles%2F1720670511070?alt=media&token=32977150-e705-4aeb-99e6-d1a89cf67b4b",
           arrivalTime: value.arrivalTime,
-          destinationTime: value.destinationTime
+          destinationTime: value.destinationTime,
+          startPoint: value.startPoint,
+          endPoint: value.endPoint
         }));
 
         const filteredData = formattedData.filter(driver => driver.email !== currentUser.email);
@@ -92,16 +94,37 @@ const Map = () => {
         (selectedPrice === '>20000' && parseFloat(driver.price) > 20000);
 
       const matchesTimeRange = (!startTime || !endTime) || (
-        driver.arrivalTime && driver.departureTime &&
+        driver.arrivalTime && driver.destinationTime &&
         new Date(`1970-01-01T${driver.arrivalTime}:00`).getTime() >= new Date(`1970-01-01T${startTime}:00`).getTime() &&
-        new Date(`1970-01-01T${driver.departureTime}:00`).getTime() <= new Date(`1970-01-01T${endTime}:00`).getTime()
+        new Date(`1970-01-01T${driver.destinationTime}:00`).getTime() <= new Date(`1970-01-01T${endTime}:00`).getTime()
       );
 
-      return matchesTime && matchesVehicle && matchesPrice && matchesTimeRange;
+      const matchesLocation = (
+        !startCoords || !endCoords ||
+        (driver.startPoint && driver.endPoint &&
+          calculateDistance(driver.startPoint, startCoords) + calculateDistance(driver.endPoint, endCoords) < 10)
+      );
+
+      return matchesTime && matchesVehicle && matchesPrice && matchesTimeRange && matchesLocation;
     });
 
     setFilteredData(filtered);
     setModalVisible(false);
+  };
+
+  const calculateDistance = (pointA, pointB) => {
+    // Calculate distance between two geographical points
+    const toRadians = (degree) => degree * (Math.PI / 180);
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = toRadians(pointB.latitude - pointA.latitude);
+    const dLon = toRadians(pointB.longitude - pointA.longitude);
+    const lat1 = toRadians(pointA.latitude);
+    const lat2 = toRadians(pointB.latitude);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.sin(dLon / 2) * Math.sin(dLon / 2) *
+              Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Distance in kilometers
   };
 
   const renderItem = ({ item }) => {
@@ -207,7 +230,7 @@ const Map = () => {
               />
             </View>
 
-            <Button title="Apply" onPress={applyFilters} />
+            <Button title="Apply Filters" onPress={applyFilters} />
             <Button title="Close" onPress={() => setModalVisible(false)} />
           </View>
         </View>
@@ -216,8 +239,8 @@ const Map = () => {
       <FlatList
         data={filteredData}
         renderItem={renderItem}
-        keyExtractor={item => item.id.toString()}
-        contentContainerStyle={styles.scrollContainer}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContainer}
       />
     </View>
   );
@@ -226,59 +249,24 @@ const Map = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f5f5',
+    padding: 16,
   },
   header: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  cardContainer: {
-    flexDirection: 'row',
-    padding: 10,
-    marginBottom: 15,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    elevation: 2,
-  },
-  imageContainer: {
-    width: 80,
-    height: 80,
-    marginRight: 10,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 40,
-  },
-  detailsContainer: {
-    flex: 1,
-  },
-  driverName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  vehicleDetails: {
-    fontSize: 14,
-    marginTop: 5,
-  },
-  paymentInfo: {
-    fontSize: 14,
-    marginTop: 5,
-    color: '#28a745',
+    marginBottom: 16,
   },
   applyFiltersButton: {
-    marginBottom: 20,
     backgroundColor: '#007bff',
+    padding: 12,
     borderRadius: 8,
-    padding: 10,
+    marginBottom: 16,
   },
   applyFiltersButtonText: {
     color: '#fff',
     textAlign: 'center',
-    fontWeight: 'bold',
+    fontSize: 16,
   },
   modalContainer: {
     flex: 1,
@@ -287,39 +275,74 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: 300,
     backgroundColor: '#fff',
     borderRadius: 8,
-    padding: 20,
-    alignItems: 'center',
+    padding: 16,
+    width: '80%',
   },
   modalHeader: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   dropdown: {
     width: '100%',
-    marginBottom: 15,
+    marginBottom: 16,
   },
   timePickerContainer: {
-    width: '100%',
-    marginBottom: 15,
+    marginBottom: 16,
   },
   label: {
     fontSize: 16,
-    marginBottom: 5,
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
-    width: '100%',
-    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 8,
+    fontSize: 16,
+    marginBottom: 16,
   },
-  scrollContainer: {
-    paddingBottom: 20,
+  cardContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  imageContainer: {
+    flex: 1,
+    marginRight: 16,
+  },
+  image: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+  },
+  detailsContainer: {
+    flex: 2,
+    justifyContent: 'center',
+  },
+  driverName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  vehicleDetails: {
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  paymentInfo: {
+    fontSize: 16,
+  },
+  listContainer: {
+    paddingBottom: 16,
   },
 });
 
