@@ -8,23 +8,13 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { UserContext } from '../context/UserContext';
 import { firebase, storage } from '../firebase/firebaseConfig'; // Adjust this import based on your project structure
 
-const Routeinfo = () => {
+const NOMINATIM_API_URL = 'https://nominatim.openstreetmap.org/search';
+
+const RouteInfo = () => {
   const { currentUser } = useContext(UserContext);
   const route = useRoute();
   const navigation = useNavigation();
-
-  const {
-    firstName,
-    lastName,
-    phoneNumber,
-    address,
-    age,
-    vehicleType = '',
-    seats,
-    model,
-    vehicleImageUri = '',
-    licenseImageUri = ''
-  } = route.params || {};
+  const { startCoords, endCoords, distance, duration, firstName, lastName, phoneNumber, address, age, vehicleType = '', seats, model, vehicleImageUri = '', licenseImageUri = '' } = route.params || {};
 
   const [startPoint, setStartPoint] = useState('');
   const [destination, setDestination] = useState('');
@@ -44,6 +34,7 @@ const Routeinfo = () => {
 
   const [mapVisible, setMapVisible] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [locationType, setLocationType] = useState('start');
 
   const uploadImage = async (uri) => {
     try {
@@ -142,7 +133,7 @@ const Routeinfo = () => {
 
     try {
       const database = firebase.database();
-      const driverRef = await database.ref('driverRef').push(routeInfo);
+      await database.ref('driverRef').push(routeInfo);
       console.log('Route info saved successfully');
       navigation.navigate('RideRequest');
     } catch (error) {
@@ -168,8 +159,9 @@ const Routeinfo = () => {
     if (!arrivalTime) setArrivalTime(new Date());
   }, [departureTime, arrivalTime]);
 
-  const handleSelectLocation = () => {
+  const handleSelectLocation = (type) => {
     setMapVisible(true);
+    setLocationType(type);
   };
 
   const handleMapPress = (event) => {
@@ -179,13 +171,65 @@ const Routeinfo = () => {
 
   const handleConfirmLocation = () => {
     if (selectedLocation) {
-      setStartPoint(`Lat: ${selectedLocation.latitude}, Lon: ${selectedLocation.longitude}`);
+      if (locationType === 'start') {
+        setStartPoint(`Lat: ${selectedLocation.latitude}, Lon: ${selectedLocation.longitude}`);
+      } else if (locationType === 'destination') {
+        setDestination(`Lat: ${selectedLocation.latitude}, Lon: ${selectedLocation.longitude}`);
+      }
     }
     setMapVisible(false);
   };
 
+  const getCoordinatesFromAddress = async (address) => {
+    try {
+      const response = await fetch(`${NOMINATIM_API_URL}?q=${encodeURIComponent(address)}&format=json`);
+      const data = await response.json();
+      if (data && data.length > 0) {
+        const { lat, lon } = data[0];
+        return { latitude: parseFloat(lat), longitude: parseFloat(lon) };
+      } else {
+        throw new Error('No data found');
+      }
+    } catch (error) {
+      console.error('Error fetching coordinates:', error);
+      throw error;
+    }
+  };
+
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.header}>Route Information</Text>
+      
+      {startCoords && (
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoTitle}>Start Location</Text>
+          <Text style={styles.infoText}>Latitude: {startCoords.latitude}</Text>
+          <Text style={styles.infoText}>Longitude: {startCoords.longitude}</Text>
+        </View>
+      )}
+      
+      {endCoords && (
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoTitle}>End Location</Text>
+          <Text style={styles.infoText}>Latitude: {endCoords.latitude}</Text>
+          <Text style={styles.infoText}>Longitude: {endCoords.longitude}</Text>
+        </View>
+      )}
+      
+      {distance && (
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoTitle}>Distance</Text>
+          <Text style={styles.infoText}>{distance} km</Text>
+        </View>
+      )}
+      
+      {duration && (
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoTitle}>Duration</Text>
+          <Text style={styles.infoText}>{duration} hrs</Text>
+        </View>
+      )}
+      
       <View style={styles.iconRow}>
         <View style={styles.iconContainer}>
           <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('personalInfo')}>
@@ -215,8 +259,7 @@ const Routeinfo = () => {
 
       <ScrollView contentContainerStyle={styles.form}>
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Starting Point</Text>
-          <TouchableOpacity onPress={handleSelectLocation}>
+          <TouchableOpacity onPress={() => handleSelectLocation('start')}>
             <TextInput
               style={[styles.input, startPointError ? styles.inputError : null]}
               placeholder="Select starting point"
@@ -228,61 +271,47 @@ const Routeinfo = () => {
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Destination</Text>
-          <TextInput
-            style={[styles.input, destinationError ? styles.inputError : null]}
-            placeholder="Enter destination"
-            value={destination}
-            onChangeText={text => setDestination(text)}
-          />
+          <TouchableOpacity onPress={() => handleSelectLocation('destination')}>
+            <TextInput
+              style={[styles.input, destinationError ? styles.inputError : null]}
+              placeholder="Select destination"
+              value={destination}
+              editable={false}
+            />
+          </TouchableOpacity>
           {destinationError ? <Text style={styles.errorText}>{destinationError}</Text> : null}
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Departure Time</Text>
-          <TouchableOpacity
-            style={[styles.input, departureTimeError ? styles.inputError : null]}
-            onPress={() => setShowDeparturePicker(true)}
-          >
-            <Text>{departureTime ? departureTime.toLocaleTimeString() : 'Select Time'}</Text>
-          </TouchableOpacity>
-          {showDeparturePicker && (
-            <DateTimePicker
-              value={departureTime}
-              mode="time"
-              display="default"
-              onChange={handleDepartureTimeChange}
+          <TouchableOpacity onPress={() => setShowDeparturePicker(true)}>
+            <TextInput
+              style={[styles.input, departureTimeError ? styles.inputError : null]}
+              placeholder="Select departure time"
+              value={departureTime.toLocaleString()}
+              editable={false}
             />
-          )}
+          </TouchableOpacity>
           {departureTimeError ? <Text style={styles.errorText}>{departureTimeError}</Text> : null}
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Arrival Time</Text>
-          <TouchableOpacity
-            style={[styles.input, arrivalTimeError ? styles.inputError : null]}
-            onPress={() => setShowArrivalPicker(true)}
-          >
-            <Text>{arrivalTime ? arrivalTime.toLocaleTimeString() : 'Select Time'}</Text>
-          </TouchableOpacity>
-          {showArrivalPicker && (
-            <DateTimePicker
-              value={arrivalTime}
-              mode="time"
-              display="default"
-              onChange={handleArrivalTimeChange}
+          <TouchableOpacity onPress={() => setShowArrivalPicker(true)}>
+            <TextInput
+              style={[styles.input, arrivalTimeError ? styles.inputError : null]}
+              placeholder="Select arrival time"
+              value={arrivalTime.toLocaleString()}
+              editable={false}
             />
-          )}
+          </TouchableOpacity>
           {arrivalTimeError ? <Text style={styles.errorText}>{arrivalTimeError}</Text> : null}
         </View>
 
         <View style={styles.inputContainer}>
-          <Text style={styles.label}>Price</Text>
           <TextInput
             style={[styles.input, priceError ? styles.inputError : null]}
             placeholder="Enter price"
             value={price}
-            onChangeText={text => setPrice(text)}
+            onChangeText={setPrice}
             keyboardType="numeric"
           />
           {priceError ? <Text style={styles.errorText}>{priceError}</Text> : null}
@@ -293,47 +322,75 @@ const Routeinfo = () => {
         </TouchableOpacity>
       </ScrollView>
 
-      <Modal visible={mapVisible} animationType="slide">
-        <View style={styles.mapContainer}>
-          <MapView
-            style={styles.map}
-            initialRegion={{
-              latitude: 31.4504,
-              longitude: 73.135,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
-            }}
-            onPress={handleMapPress}
-          >
-            {selectedLocation && (
-              <Marker coordinate={selectedLocation} />
-            )}
-          </MapView>
-          <View style={styles.mapButtonsContainer}>
-            <TouchableOpacity style={styles.mapButton} onPress={() => setMapVisible(false)}>
-              <Text style={styles.mapButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.mapButton} onPress={handleConfirmLocation}>
-              <Text style={styles.mapButtonText}>Confirm</Text>
+      {mapVisible && (
+        <Modal transparent={true} visible={mapVisible} animationType="slide">
+          <View style={styles.modalContainer}>
+            <MapView
+              style={styles.map}
+              initialRegion={{
+                latitude: 32.1614, // Default to Gujranwala, Pakistan
+                longitude: 74.1883,
+                latitudeDelta: 0.0922,
+                longitudeDelta: 0.0421,
+              }}
+              onPress={handleMapPress}
+            >
+              {selectedLocation && (
+                <Marker coordinate={selectedLocation} />
+              )}
+            </MapView>
+            <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmLocation}>
+              <Text style={styles.confirmButtonText}>Confirm</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      )}
+
+      {showDeparturePicker && (
+        <DateTimePicker
+          value={departureTime}
+          mode="datetime"
+          display="default"
+          onChange={handleDepartureTimeChange}
+        />
+      )}
+
+      {showArrivalPicker && (
+        <DateTimePicker
+          value={arrivalTime}
+          mode="datetime"
+          display="default"
+          onChange={handleArrivalTimeChange}
+        />
+      )}
+    </ScrollView>
   );
 };
-
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 20,
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  infoContainer: {
+    marginBottom: 10,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  infoText: {
+    fontSize: 16,
   },
   iconRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   iconContainer: {
     alignItems: 'center',
@@ -342,31 +399,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   circle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
     backgroundColor: '#007bff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+    borderRadius: 25,
+    padding: 10,
+    marginBottom: 5,
   },
   iconText: {
     fontSize: 12,
+    color: '#007bff',
   },
   form: {
-    paddingBottom: 16,
+    flex: 1,
   },
   inputContainer: {
-    marginBottom: 16,
-  },
-  label: {
-    marginBottom: 4,
+    marginBottom: 15,
   },
   input: {
-    borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 4,
-    padding: 8,
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
     fontSize: 16,
   },
   inputError: {
@@ -374,18 +426,38 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: 'red',
-    marginTop: 4,
+    fontSize: 14,
   },
   saveButton: {
     backgroundColor: '#007bff',
-    paddingVertical: 12,
-    borderRadius: 4,
+    padding: 15,
+    borderRadius: 5,
     alignItems: 'center',
   },
   saveButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  map: {
+    width: '100%',
+    height: '80%',
+  },
+  confirmButton: {
+    backgroundColor: '#007bff',
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+    width: '100%',
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontSize: 18,
   },
 });
 
-export default Routeinfo;
+export default RouteInfo;

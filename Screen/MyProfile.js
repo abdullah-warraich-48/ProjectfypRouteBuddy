@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const DriverProfileScreen = ({ navigation }) => {
 
@@ -31,7 +31,9 @@ const DriverProfileScreen = ({ navigation }) => {
   const handleLogoutPress = () => {
     navigation.navigate('LogoutScreen');
   };
-
+  const handleProfileInfoPress = () => { 
+    navigation.navigate('dProfileUpdate'); // Navigate to dProfileUpdate screen };
+  };
   return (
     <View style={styles.container}>
     
@@ -45,16 +47,14 @@ const DriverProfileScreen = ({ navigation }) => {
 
           {/* Profile Info */}
           <TouchableOpacity
-            style={styles.infoSection}
-            onPress={() => {
-              /* Handle onPress for profile info */
-            }}
-          >
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Profile Info</Text>
-              <Text style={styles.infoPlaceholder}>{driverInfo.drivingInfo}</Text>
-            </View>
-          </TouchableOpacity>
+                        style={styles.infoSection}
+                        onPress={handleProfileInfoPress} // Navigate to dProfileUpdate on press
+                    >
+                        <View style={styles.infoItem}>
+                            <Text style={styles.infoLabel}>Profile Info</Text>
+                            <Text style={styles.infoPlaceholder}>{driverInfo.drivingInfo}</Text>
+                        </View>
+                    </TouchableOpacity>
 
           {/* Vehicle Info */}
           <TouchableOpacity

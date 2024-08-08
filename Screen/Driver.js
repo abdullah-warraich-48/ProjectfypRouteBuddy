@@ -14,6 +14,7 @@ const Driver = ({ route }) => {
   const [loading, setLoading] = useState(true);
   const [profilePic, setProfilePic] = useState('');
   const [vehiclePics, setVehiclePics] = useState([]);
+  const [completeDriverData, SetCompleteDriverData] = useState();
   const currentUserEmail = currentUser?.email;
   const { driverData } = route?.params || {}; //console.log(driverData)
 
@@ -56,7 +57,9 @@ const Driver = ({ route }) => {
         const driverRef = ref(firebase.database(), `driverRef/${driverData?.id}`);
         onValue(driverRef, (snapshot) => {
           const driver = snapshot.val();
+          SetCompleteDriverData(driver);
           if (driver) {
+            console.log("-=======",driver)
             setProfilePic(driver.profilePic || ''); // Fetch profile picture URL
             setVehiclePics(driver.vehiclePics || []); // Fetch vehicle pictures
           }
@@ -135,7 +138,14 @@ const Driver = ({ route }) => {
           <FontAwesome name="calendar" size={24} color="black" />
           <Text style={styles.optionLabel}>Availability</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('driverLocation')}>
+        <TouchableOpacity style={styles.option} onPress={() => {
+          console.log("______________",completeDriverData);
+          
+          navigation.navigate('driverLocation', { startPoint: completeDriverData.startPoint, destination: completeDriverData.destination });
+
+          
+          
+          }}>
           <FontAwesome name="map-marker" size={24} color="black" />
           <Text style={styles.optionLabel}>Location</Text>
         </TouchableOpacity>

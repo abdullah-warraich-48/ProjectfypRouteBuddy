@@ -135,7 +135,7 @@ const PersonalInfo = () => {
         </View>
         <View style={styles.iconContainer}>
           <View style={styles.circle}>
-            <TouchableOpacity style={styles.locationButton} onPress={() => navigation.navigate('RouteInfo')}>
+            <TouchableOpacity style={styles.locationButton} onPress={() => navigation.navigate('Routeinfo')}>
               <Icon name="road" size={30} color="#000" style={styles.icon} />
             </TouchableOpacity>
             <Text style={styles.text}>Route</Text>

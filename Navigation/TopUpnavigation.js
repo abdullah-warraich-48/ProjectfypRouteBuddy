@@ -15,6 +15,7 @@ import Repass from '../Screen/Repass';
 import Routeinfo from '../Screen/Routeinfo';
 import SignIn from '../Screen/SignIn';
 import UserInfoScreen from '../Screen/UserInfoScreen';
+import dProfileUpdate from '../Screen/dProfileUpdate';
 
 import SignUp from '../Screen/SignUp';
 import vehicleinfo from '../Screen/Vehicleinfo';
@@ -53,6 +54,7 @@ const TopUpNavigation = () => {
      
       <Stack.Screen name="seats" component={seats} />
       <Stack.Screen name="UserInfo" component={UserInfoScreen} />
+      <Stack.Screen name="dProfileUpdate" component={dProfileUpdate} />
       <Stack.Screen name="Routeinfo" component={Routeinfo} />
       <Stack.Screen name="personalInfo" component={personalInfo} />
       <Stack.Screen name="feedback" component={feedback} options={{ title: 'Feedback' }} />

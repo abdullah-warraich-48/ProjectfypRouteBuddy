@@ -95,7 +95,6 @@ const VehicleInfo = () => {
     }
 
     let vehicleImageUrls = [];
-   
     try {
       vehicleImageUrls = await uploadImages(images.map(image => image.uri));
     } catch (error) {
@@ -103,7 +102,7 @@ const VehicleInfo = () => {
       Alert.alert('Upload Failed', 'There was an issue uploading the images. Please try again.');
       return;
     }
-   // console.log(vehicleImageUrls);
+    console.log(vehicleImageUrls);
 
     navigation.navigate('Routeinfo', {
       ...route.params,
@@ -113,7 +112,6 @@ const VehicleInfo = () => {
       seats,
       color,
     });
-    console.log(vehicleImageUrls);
   };
 
   return (

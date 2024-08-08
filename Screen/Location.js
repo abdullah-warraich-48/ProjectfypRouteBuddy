@@ -1,11 +1,11 @@
-import { useNavigation } from '@react-navigation/native'; // Import navigation hook
+import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import * as Location from 'expo-location';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, StatusBar, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_DEFAULT } from 'react-native-maps';
+import { firebase } from '../firebase/firebaseConfig';
 
-// Constants
 const NOMINATIM_API_URL = 'https://nominatim.openstreetmap.org/search';
 const ROUTE_API_URL = 'https://api.openrouteservice.org/v2/directions/driving-car';
 const API_KEY = '5b3ce3597851110001cf62482c3d6949d511473b85ef5c97a257bd32';
@@ -20,15 +20,17 @@ export default function App() {
   const [duration, setDuration] = useState(null);
   const [liveLocation, setLiveLocation] = useState(null);
   const [mapRegion, setMapRegion] = useState({
-    latitude: 32.1614, // Default to Gujranwala, Pakistan
+    latitude: 32.1614,
     longitude: 74.1883,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
-  const [useCurrentLocation, setUseCurrentLocation] = useState(true); // State to manage location usage
+  const [useCurrentLocation, setUseCurrentLocation] = useState(true);
+  const [drivers, setDrivers] = useState([]);
+  const [filteredDrivers, setFilteredDrivers] = useState([]);
   const mapRef = useRef(null);
   const watchId = useRef(null);
-  const navigation = useNavigation(); // Use the navigation hook
+  const navigation = useNavigation();
 
   useEffect(() => {
     const requestLocationPermission = async () => {
@@ -45,7 +47,7 @@ export default function App() {
       };
       setLiveLocation(coords);
       if (useCurrentLocation) {
-        setStartCoords(coords); // Set starting coordinates to user's current location
+        setStartCoords(coords);
       }
       setMapRegion({
         ...coords,
@@ -58,7 +60,7 @@ export default function App() {
           ...coords,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
-        }, 1000); // 1-second animation duration
+        }, 1000);
       }
 
       startWatchingLocationUpdates();
@@ -78,14 +80,12 @@ export default function App() {
           };
           setLiveLocation(coords);
 
-          console.log('Live Location Updated:', coords); // Log location updates
-
           if (mapRef.current) {
             mapRef.current.animateToRegion({
               ...coords,
               latitudeDelta: 0.0922,
               longitudeDelta: 0.0421,
-            }, 1000); // 1-second animation duration
+            }, 1000);
           }
         }
       );
@@ -106,9 +106,27 @@ export default function App() {
     }
   }, [startCoords, endCoords]);
 
+  useEffect(() => {
+    fetchDrivers();
+  }, []);
+
+  const fetchDrivers = async () => {
+    try {
+      const driverRef = firebase.database().ref('driverRef');
+      const snapshot = await driverRef.once('value');
+      const fetchedData = snapshot.exists() ? Object.entries(snapshot.val()) : [];
+      setDrivers(fetchedData.map(([key, value]) => ({
+        ...value,
+        key,
+      })));
+    } catch (error) {
+      console.error("Error fetching drivers:", error);
+    }
+  };
+
   const fetchCoords = async (query, setCoords, setLocation) => {
     try {
-      if (query.length < 3) return; // Start searching after 3 characters
+      if (query.length < 3) return;
 
       const response = await axios.get(NOMINATIM_API_URL, {
         params: {
@@ -142,8 +160,6 @@ export default function App() {
           },
         });
 
-        console.log('Route API Response:', response.data);
-
         const features = response.data.features || [];
         if (features.length > 0) {
           const route = features[0];
@@ -163,39 +179,21 @@ export default function App() {
             }
 
             const { distance, duration } = route.properties.segments[0];
-
-            // Convert distance from meters to kilometers
-            const distanceInKm = distance / 1000;
-
-            // Convert duration from seconds to hours
-            const durationInHours = duration / 3600;
-
-            setDistance(distanceInKm.toFixed(2)); // Format to 2 decimal places
-            setDuration(durationInHours.toFixed(2)); // Format to 2 decimal places
-          } else {
-            console.log('No route geometry found in response');
+            setDistance((distance / 1000).toFixed(2));
+            setDuration((duration / 3600).toFixed(2));
           }
-        } else {
-          console.log('No features found in route response');
         }
       } catch (error) {
         console.error("Error fetching route:", error);
       }
-    } else {
-      console.log('Start or End coordinates are missing');
     }
   };
 
   const handleMapPress = (event) => {
     const { coordinate } = event.nativeEvent;
-    console.log('Map Pressed at:', coordinate); // Debugging log for pressed coordinates
-
-    // Set destination coordinates
     setEndCoords(coordinate);
     setDestinationLocation(`Lat: ${coordinate.latitude}, Lon: ${coordinate.longitude}`);
-    console.log('End Coordinates set:', coordinate); // Debugging log
 
-    // Fetch route if starting and ending coordinates are set
     if (startCoords) {
       fetchRoute();
     }
@@ -203,7 +201,6 @@ export default function App() {
 
   const handleInputSubmit = async (event, setCoords, setLocation) => {
     const query = event.nativeEvent.text;
-    console.log('Submitted Query:', query); // Debugging log
     if (query.length > 2) {
       await fetchCoords(query, setCoords, setLocation);
     }
@@ -211,7 +208,6 @@ export default function App() {
 
   const handleCurrentLocationToggle = () => {
     if (useCurrentLocation) {
-      // Clear start coordinates and live location if switching to manual input
       setStartCoords(null);
       setLiveLocation(null);
     }
@@ -227,7 +223,19 @@ export default function App() {
   };
 
   const handleFindDriver = () => {
-    navigation.navigate('Map'); // Navigate to the Map screen
+    if (!startCoords || !endCoords) {
+      alert('Please select a starting point and destination.');
+      return;
+    }
+
+    const matchedDrivers = drivers.filter(driver =>
+      driver.startLatitude === startCoords.latitude &&
+      driver.startLongitude === startCoords.longitude &&
+      driver.endLatitude === endCoords.latitude &&
+      driver.endLongitude === endCoords.longitude
+    );
+
+    setFilteredDrivers(matchedDrivers);
   };
 
   return (
@@ -264,12 +272,12 @@ export default function App() {
         ref={mapRef}
         provider={PROVIDER_DEFAULT}
         style={styles.map}
-        region={mapRegion} // Set the map region based on user's location
+        region={mapRegion}
         mapType='standard'
         showsUserLocation={true}
         followsUserLocation={true}
         showsMyLocationButton={true}
-        onPress={handleMapPress} // Add onPress handler
+        onPress={handleMapPress}
       >
         {startCoords && (
           <Marker coordinate={startCoords} title="Starting Location" pinColor="blue" />
@@ -280,6 +288,16 @@ export default function App() {
         {routeCoords.length > 0 && (
           <Polyline coordinates={routeCoords} strokeWidth={4} strokeColor="blue" />
         )}
+        {filteredDrivers.map((driver, index) => (
+          driver.latitude && driver.longitude && (
+            <Marker
+              key={index}
+              coordinate={{ latitude: driver.latitude, longitude: driver.longitude }}
+              title={driver.name}
+              description={driver.vehicle}
+            />
+          )
+        ))}
       </MapView>
       {distance && duration && (
         <View style={styles.routeInfo}>
@@ -288,7 +306,7 @@ export default function App() {
         </View>
       )}
       {routeCoords.length > 0 && (
-        <Button title="Find Driver" onPress={handleFindDriver} /> // Conditional "Find Driver" button
+        <Button title="Find Driver" onPress={handleFindDriver} />
       )}
       <StatusBar style="auto" />
     </View>
