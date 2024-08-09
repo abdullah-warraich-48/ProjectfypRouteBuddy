@@ -2,9 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import driverprofile from '../Screen/driverprofile';
-import MyIncome from '../Screen/MyIncome';
-import NotificationReceiverScreen from '../Screen/NotificationReceiverScreen';
+import Messages from '../Screen/Messages';
 import ratingscreen from '../Screen/ratingscreen';
+import RideRequest from '../Screen/RideRequest';
 
 const DriverTab = createBottomTabNavigator();
 
@@ -15,9 +15,9 @@ const DriverHomeNavigation = () => {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
 
-          if (route.name === 'NotificationScreen') {
+          if (route.name === 'RideRequest') {
             iconName = focused ? 'car' : 'car-outline';
-          } else if (route.name === 'MyIncome') {
+          } else if (route.name === 'Messages') {
             iconName = focused ? 'cash' : 'cash-outline';
           } else if (route.name === 'ratingscreen') {
             iconName = focused ? 'star' : 'star-outline';
@@ -33,8 +33,8 @@ const DriverHomeNavigation = () => {
         inactiveTintColor: 'gray',
       }}
     >
-      <DriverTab.Screen name="NotificationScreen" component={NotificationReceiverScreen} />
-      <DriverTab.Screen name="MyIncome" component={MyIncome} />
+      <DriverTab.Screen name="RideRequest" component={RideRequest} />
+      <DriverTab.Screen name="Messages" component={Messages} />
       <DriverTab.Screen name="ratingscreen" component={ratingscreen} />
       <DriverTab.Screen name="Profile" component={driverprofile} />
     </DriverTab.Navigator>

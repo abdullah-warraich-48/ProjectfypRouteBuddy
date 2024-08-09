@@ -5,7 +5,7 @@ import { Alert, Button, FlatList, StyleSheet, Text, View } from 'react-native';
 import { UserContext } from '../context/UserContext';
 import { firebase } from '../firebase/firebaseConfig';
 
-const Notifications = () => {
+const RideRequest = () => {
   const navigation = useNavigation();
   const { currentUser } = useContext(UserContext);
   const [notifications, setNotifications] = useState([]);
@@ -68,7 +68,7 @@ const Notifications = () => {
             console.warn(`Invalid 'users' field in notification with ID: ${notificationKey}`);
           }
         }
-
+        userNotifications.reverse();
         setNotifications(userNotifications);
       } else {
         setNotifications([]);
@@ -258,4 +258,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Notifications;
+export default RideRequest;

@@ -41,7 +41,7 @@ const Notifications = () => {
             });
           }
         }
-
+        userNotifications.reverse();
         setNotifications(userNotifications);
       } else {
         console.warn('No notifications data available.');

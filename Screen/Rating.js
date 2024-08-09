@@ -17,9 +17,11 @@ export default function FeedbackScreen({ route }) {
     "Poor navigation",
     "Car issues"
   ]);
+  const [hasRated, setHasRated] = useState(false);
 
   useEffect(() => {
     fetchRatings();
+    checkIfUserHasRated();
   }, []);
 
   const fetchRatings = async () => {
@@ -43,7 +45,24 @@ export default function FeedbackScreen({ route }) {
     }
   };
 
+  const checkIfUserHasRated = async () => {
+    try {
+      const database = firebase.database();
+      const snapshot = await database.ref(`ratings/${receiverEmail}`).orderByChild('senderId').equalTo(senderId).once('value');
+      const userRatings = snapshot.val();
+
+      setHasRated(userRatings && Object.keys(userRatings).length > 0);
+    } catch (error) {
+      console.error("Error checking user rating: ", error);
+    }
+  };
+
   const submitRating = async () => {
+    if (hasRated) {
+      Alert.alert('Already Rated', 'You have already submitted a rating for this driver.');
+      return;
+    }
+
     try {
       const database = firebase.database();
       const newRatingRef = database.ref(`ratings/${receiverEmail}`).push();
@@ -58,19 +77,17 @@ export default function FeedbackScreen({ route }) {
       });
 
       Alert.alert('Thank you!', 'Your rating has been submitted.');
-      // Clear the comment after submission
-      setComment('');
+      setComment(''); // Clear the comment after submission
       fetchRatings(); // Refresh ratings data
+      setHasRated(true); // Set the flag to prevent duplicate ratings
     } catch (error) {
       console.error("Error submitting rating: ", error);
     }
   };
 
   const handleTagPress = (tag) => {
-    // Check if the comment already includes the tag
     if (!comment.includes(tag)) {
       setComment(prevComment => {
-        // Append the tag to the existing comment
         if (prevComment) {
           return `${prevComment}, ${tag}`;
         } else {

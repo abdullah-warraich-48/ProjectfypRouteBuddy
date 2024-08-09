@@ -5,7 +5,7 @@ import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native
 import { UserContext } from '../context/UserContext';
 import { firebase } from '../firebase/firebaseConfig';
 
-const Myincome = () => {
+const Messages = () => {
   const navigation = useNavigation();
   const { currentUser } = useContext(UserContext);
   const [chats, setChats] = useState([]);
@@ -147,4 +147,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Myincome;
+export default Messages;

@@ -89,25 +89,53 @@ const Driver = ({ route }) => {
         Alert.alert('Error', 'Driver or user data is missing.');
         return;
       }
+  
+      // Check for existing pending requests
       const notificationsRef = ref(firebase.database(), 'notifications');
-      const newNotificationRef = push(notificationsRef);
-      const notificationData = {
-        title: 'New Request',
-        message: `You have received a new request from ${currentUser.email || 'unknown'} for driver ${driverData.firstName || 'unknown'}.`,
-        timestamp: Date.now(),
-        users: [currentUser.email, driverData.email],
-      };
-      console.log("Notification Data:", notificationData);
-      await set(newNotificationRef, notificationData);
-      Alert.alert('Request Sent', `Your request has been sent to ${driverData.firstName}.`, [
-        { text: 'OK', onPress: () => navigation.navigate('NotificationScreen') }
-      ]);
+      onValue(notificationsRef, async (snapshot) => {
+        const notificationsData = snapshot.val();
+        let requestExists = false;
+  
+        if (notificationsData) {
+          for (const notificationKey in notificationsData) {
+            const notification = notificationsData[notificationKey];
+            if (
+              notification.users.includes(currentUser.email) &&
+              notification.users.includes(driverData.email) &&
+              notification.status === 'pending'
+            ) {
+              requestExists = true;
+              break;
+            }
+          }
+        }
+  
+        if (requestExists) {
+          Alert.alert('Request Already Sent', 'You have already sent a request to this driver. Please wait for their response.');
+        } else {
+          // Send a new request
+          const newNotificationRef = push(notificationsRef);
+          const notificationData = {
+            title: 'New Request',
+            message: `You sent a request from ${currentUser.email} for driver ${driverData.firstName}.`,
+            timestamp: Date.now(),
+            users: [currentUser.email, driverData.email],
+            status: 'pending',
+          };
+  
+          console.log('Notification Data:', notificationData);
+          await set(newNotificationRef, notificationData);
+          Alert.alert('Request Sent', `Your request has been sent to ${driverData.firstName}.`, [
+            { text: 'OK', onPress: () => navigation.navigate('NotificationScreen') }
+          ]);
+        }
+      });
     } catch (error) {
       console.error('Error sending request:', error.message);
       Alert.alert('Error', 'Failed to send request. Please try again later.');
     }
   };
-
+  
   return (
     <View style={styles.container}>
       <View style={styles.profileContainer}>
